@@ -22,7 +22,7 @@ u8 software_version[]={0x01 ,0x01};//硬件版本号 软件版本号
 /*******************************************************************************
        使能外设GPIO
 *******************************************************************************/
-void RCC_Configuration(void)
+WEEK void RCC_Configuration(void)
 {	
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
 						  RCC_APB2Periph_GPIOC |RCC_APB2Periph_GPIOD | RCC_APB2Periph_AFIO , ENABLE); 	
