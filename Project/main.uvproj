@@ -455,14 +455,14 @@
               <FileType>1</FileType>
               <FilePath>..\User\stm32f10x_it.c</FilePath>
             </File>
-			<File>
+            <File>
               <FileName>ins_res.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\ins_res.c</FilePath>
             </File>
-			<File>
+            <File>
               <FileName>ins_res.h</FileName>
-              <FileType>1</FileType>
+              <FileType>5</FileType>
               <FilePath>..\User\ins_res.h</FilePath>
             </File>
           </Files>

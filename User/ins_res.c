@@ -171,6 +171,13 @@ uint8_t CloseSelectNegRelay(uint32_t closedat)
 	return 1;
 }
 
+/***********************************************
+*fun     :根据主机新输入的电阻值求出的电阻串组合和本地的电阻串组合,进行继电器闭合
+			电阻串组合中,1表示选中该电阻,0表示不选中该电阻值
+*name    :
+*var     :
+*return  :
+************************************************/
 uint8_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t Nlocal)
 {
 
@@ -192,7 +199,7 @@ uint8_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t Nl
 #else
 
 	opendat=~Pinput;
-	closedat=~Pinput;
+	closedat=Pinput;
 	OpenSelectPosRelay(opendat);
 	CloseSelectPosRelay(closedat);
 
@@ -208,8 +215,107 @@ uint8_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t Nl
 
 
 
+static uint32_t s_resbuf[24]={
+	100,200,200,500,
+	1000,2000,2000,5000,
+	10000,20000,20000,50000,
+	100000,200000,200000,500000,
+	1000000,2000000,2000000,5000000,
+	10000000,20000000,20000000,50000000
+};
+
+uint32_t getCombinationRes(uint32_t res)
+{
+	int32_t i=0;
+	
+	uint32_t dat=0;
+	
+	if(res>=111000000)
+	{
+		return 0xffffff;
+	}
+	for(i=23;i>=0;i--)
+	{
+		if(res>=s_resbuf[i])
+		{
+			res=res-s_resbuf[i];
+			dat=dat|(0x01<<i);
+		}
+	}
+	
+	return dat;
+}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#define CMD_MASTER_INIT				'I'
+#define CMD_MASTER_INQUIRE			'Q'
+#define CMD_MASTER_READ				'R'
+#define CMD_MASTER_WRITE			'W'
+
+
+uint8_t deal_master_cmd(void)
+{
+
+	uint8_t cmd=0;
+	uint32_t res_cmd=0;
+
+	switch (cmd)
+	{
+		case CMD_MASTER_INIT:
+		{
+
+		}
+		break;
+
+		case CMD_MASTER_INQUIRE:
+		{
+
+		}
+		break;
+
+		case CMD_MASTER_READ:
+		{
+
+		}
+		break;
+
+		case CMD_MASTER_WRITE:
+		{
+
+		}
+		break;
+
+
+	
+	}
+
+	
+	return 1;
+}
 
 
 
