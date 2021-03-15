@@ -29,7 +29,7 @@
 
 #define USART3_DR_Base  0x40004804	
 
-#define  SENDBUFF_SIZE  20
+#define  SENDBUFF_SIZE_UAER3  20
 //#define RAM3_BASE       0x20000000
 //#define RAM3_BB_BASE    0x23000000
 #define UART3_FIFO_SIZE	 15
@@ -51,6 +51,8 @@ void DMA_Config_Channel2(void);
 void USART3_DMA_init(void);
 void Uart3_SendArray(u8 *pData,u16 Leng);
 void uart3_dma_init(void);
+void USART3_SendByte(unsigned char temp);
+
 u8 read_usart3_char(u8 *ch);
 u8 get_packet3(void);
 

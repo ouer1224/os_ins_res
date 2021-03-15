@@ -1,5 +1,5 @@
 #include "include.h"
-
+#include "uart3.h"
 u8 uart3_recv_buf[UART3_FIFO_SIZE];
 //u8 uart3_recv_dat[UART3_FIFO_SIZE];
 u8 DMA3_DR_BASE[UART3_FIFO_SIZE];
@@ -113,7 +113,7 @@ void DMA_Config_Channel2(void)
 	/*方向：从内存到外设*/		
     DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;	
 	/*传输大小DMA_BufferSize=SENDBUFF_SIZE*/	
-    DMA_InitStructure.DMA_BufferSize = SENDBUFF_SIZE;
+    DMA_InitStructure.DMA_BufferSize = SENDBUFF_SIZE_UAER3;
 	/*外设地址不增*/	    
     DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable; 
 	/*内存地址自增*/
@@ -235,7 +235,7 @@ u8 read_usart3_char(u8 *ch)
 	
 	return 1;
 	}
-
+#if 0
 u8 get_packet3(void)
 {
 	u8 temp;	
@@ -378,3 +378,18 @@ u8 get_packet3(void)
 	 return 0;
 	}
 	
+#else
+
+u8 get_packet3(void)
+{
+		return 1;
+}
+
+
+#endif	
+	
+
+
+
+
+

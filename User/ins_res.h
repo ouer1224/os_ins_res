@@ -7,6 +7,30 @@
 #include "stm32f10x.h"
 
 
+#define FUN_OK				1
+#define FUN_NO_COMPLETE		0
+#define FUN_ERR		0xffffffff
+
+
+
+#ifndef NULL
+#define NULL	((void *)0)
+#endif
+
+
+#ifndef null
+#define null	((void *)0)
+#endif
+
+
+
+
+
+
+
+
+
+
 #define OPEN_RELAY		1
 #define CLOSE_RELAY		0
 
@@ -130,6 +154,47 @@
 #define Pin_DB5				PORTA_P6
 #define Pin_DB6				PORTA_P5
 #define Pin_DB7				PORTA_P4
+
+
+
+
+
+typedef struct
+{
+	uint8_t head;
+	uint8_t funcode;
+	uint8_t adress_dest;
+	uint8_t len;
+
+}Msg_res_head;
+
+typedef struct
+{
+	uint16_t check;
+	uint16_t tail;
+
+}Msg_res_tail;
+
+
+typedef struct
+{
+	Msg_res_head msg_head;
+
+	void *pr;
+	
+	Msg_res_tail msg_tail;
+
+}Msg_res_master;
+
+
+
+
+
+
+
+
+
+
 
 
 

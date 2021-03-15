@@ -3,6 +3,25 @@
 
 #include "ins_res.h"
 
+#include "uart3.h"
+
+#define CMD_MASTER_INIT				'I'
+#define CMD_MASTER_INQUIRE			'Q'
+#define CMD_MASTER_READ				'R'
+#define CMD_MASTER_WRITE			'W'
+
+#define ADRESS_MASTER				'0'
+
+
+
+Msg_res_master s_msg_res_master=
+{
+	'$','Q','0',0,
+	null,
+	0x00,0x0d0a
+};
+
+
 
 /***********************************************
 *fun     :初始化相关引脚为输出,且暂时设置为0
@@ -178,7 +197,7 @@ uint8_t CloseSelectNegRelay(uint32_t closedat)
 *var     :
 *return  :
 ************************************************/
-uint8_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t Nlocal)
+uint32_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t Nlocal)
 {
 
 	uint32_t opendat=0,closedat=0;
@@ -210,7 +229,7 @@ uint8_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t Nl
 
 
 #endif
-	return 1;
+	return FUN_OK;
 }
 
 
@@ -246,42 +265,273 @@ uint32_t getCombinationRes(uint32_t res)
 	return dat;
 }
 
+/***********************************************
+*fun     :获取本地已经设置的绝缘阻值
+*name    :
+*var     :
+*return  :
+************************************************/
+static uint32_t s_localres_vcc=0;
+static uint32_t s_localres_gnd=0;
+uint32_t getLocalResVcc(void)
+{
+	return s_localres_vcc;
+}
+
+uint32_t getLocalResGnd(void)
+{
+	return s_localres_gnd;
+}
+
+uint32_t setLocalResVcc(uint32_t val)
+{
+	s_localres_vcc=val;
+	return FUN_OK;
+}
+
+uint32_t setLocalResGnd(uint32_t val)
+{
+	s_localres_gnd=val;
+	return FUN_OK;
+}
+
+
+/***********************************************
+*fun     :发送Msg_res_master中的报文信息
+*name    :
+*var     :
+*return  :返回值为0xff时,表示错误,返回值为1时,发送成功
+************************************************/
+uint8_t send_msg_res(Msg_res_master * msg)
+{
+	uint32_t i=0;
+	uint32_t len=0;
+	uint8_t *pr=NULL;
+
+
+	if((msg==NULL)||((msg->pr==NULL)&&(msg->msg_head.len!=0)))
+	{	
+		return 0xff;
+	}	
+
+	len=sizeof(msg->msg_head);
+	pr=(void *)&(msg->msg_head);
+	for(i=0;i<len;i++)
+	{
+		USART3_SendByte(pr[i]);
+	}
+
+	len=msg->msg_head.len;
+	pr=msg->pr;
+	for(i=0;i<len;i++)
+	{
+		USART3_SendByte(pr[i]);
+	}
+	
+	len=sizeof(msg->msg_tail);
+	pr=(void *)&(msg->msg_tail);
+	for(i=0;i<len;i++)
+	{
+		USART3_SendByte(pr[i]);
+	}
+
+
+	return 1;
+}
+
+/***********************************************
+*fun     :计算累加和
+*name    :
+*var     :
+*return  :32位的累加和
+************************************************/
+uint32_t cal_checksum(uint8_t *buf,uint32_t len)
+{
+	uint32_t check=0;
+	uint32_t i=0;
+	for(i=0;i<len;i++)
+	{
+		check+=buf[i];
+	}
+
+	return check;
+}
+
+
+static uint8_t s_dat_inquire[]="INSU_RES";
+uint8_t handle_inquire_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
+{
+
+	if(len!=0)
+	{
+		return 0xff;
+	}
+
+	msg->msg_head.len=sizeof(s_dat_inquire)-2;
+	msg->msg_head.adress_dest=ADRESS_MASTER;
+	msg->msg_head.funcode=CMD_MASTER_INQUIRE;
+	msg->msg_head.head='$';
+
+	msg->msg_tail.tail=0x0d0a;
+
+	msg->pr=s_dat_inquire;
+
+	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
+
+	send_msg_res(msg);
+	return 1;
+}
+
+static uint8_t s_buf_write[12];
+
+uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
+{
+	uint32_t *pr_dat_vcc=NULL;
+	uint32_t *pr_dat_gnd=NULL;
+	uint32_t *pr=NULL;
+	uint32_t Pinput=0,Ninput=0,Plocal=0,Nlocal=0;	
+	uint32_t localresP=0,localresN=0;
+	uint8_t errcode=1;
+	uint32_t st=0;
+	
+	if(len!=8)
+	{
+		errcode=1;
+	}
+	else
+	{
+
+		pr_dat_vcc=(void *)(buf);
+		pr_dat_gnd=(void *)(buf+4);
+	
+		localresP=getLocalResVcc();
+		localresN=getLocalResGnd();
+	
+		if((*pr_dat_vcc==localresP)&&(*pr_dat_gnd==localresN))
+		{
+			errcode=0;
+		}
+		else
+		{
+	
+			Pinput=getCombinationRes(*pr_dat_vcc);
+			Ninput=getCombinationRes(*pr_dat_gnd);
+			Plocal=getCombinationRes(localresP);
+			Nlocal=getCombinationRes(localresN);
+	
+			st=selectInsRes(Pinput,Ninput,Plocal,Nlocal);
+			if(st==FUN_OK)
+			{
+				errcode=0;
+				setLocalResVcc(*pr_dat_vcc);
+				setLocalResGnd(*pr_dat_gnd);
+			}
+	
+		}
+
+	}
+	
+	pr=(void *)(s_buf_write+0);
+	*pr=errcode;
+	pr=(void *)(s_buf_write+4);
+	*pr=getLocalResVcc();
+	pr=(void *)(s_buf_write+8);
+	*pr=getLocalResGnd();
+
+	msg->msg_head.len=12;
+	msg->msg_head.adress_dest=ADRESS_MASTER;
+	msg->msg_head.funcode=CMD_MASTER_WRITE;
+	msg->msg_head.head='$';
+
+	msg->msg_tail.tail=0x0d0a;
+
+	msg->pr=s_buf_write;
+
+	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
+
+	send_msg_res(msg);
+
+
+	return FUN_OK;
+}
+
+uint32_t handle_red_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
+{
+
+	uint32_t *pr=NULL;
+	
+
+	pr=(void *)(s_buf_write+0);
+	*pr=0;
+	pr=(void *)(s_buf_write+4);
+	*pr=getLocalResVcc();
+	pr=(void *)(s_buf_write+8);
+	*pr=getLocalResGnd();
+
+
+	msg->msg_head.len=12;
+	msg->msg_head.adress_dest=ADRESS_MASTER;
+	msg->msg_head.funcode=CMD_MASTER_READ;
+	msg->msg_head.head='$';
+
+	msg->msg_tail.tail=0x0d0a;
+
+	msg->pr=s_buf_write;
+
+	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
+
+	send_msg_res(msg);
+
+
+	return FUN_OK;
+}
 
 
 
+uint8_t judge_checkSum(uint8_t *buf,uint8_t len,uint16_t checksum)
+{
+	uint32_t i=0;
+	uint32_t check=0;
+	for(i=0;i<len;i++)
+	{
+		check=check+buf[i];
+	}
+	check%=0xffff;
+	if(check!=checksum)
+	{
+		return 0;
+	}
+
+	return 1;
+}
 
 
 
+#define Pos_Cmd		1
+#define Pos_Len		3
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#define CMD_MASTER_INIT				'I'
-#define CMD_MASTER_INQUIRE			'Q'
-#define CMD_MASTER_READ				'R'
-#define CMD_MASTER_WRITE			'W'
-
-
-uint8_t deal_master_cmd(void)
+uint8_t deal_master_cmd(uint8_t *buf)
 {
 
 	uint8_t cmd=0;
-	uint32_t res_cmd=0;
+
+	uint32_t len=0;
+	uint8_t rc=0;
+	uint16_t check=0;
+
+
+	cmd=buf[Pos_Cmd];
+	len=buf[Pos_Len];
+
+	check=(buf[Pos_Len+len+1]<<8)|(buf[Pos_Len+len+2]);
+
+	rc=judge_checkSum(buf+Pos_Len,len+1,check);
+	if(rc!=1)
+	{
+		return 0xff;
+	}
+
 
 	switch (cmd)
 	{
@@ -293,19 +543,19 @@ uint8_t deal_master_cmd(void)
 
 		case CMD_MASTER_INQUIRE:
 		{
-
+			handle_inquire_msg(buf+Pos_Len+1,len,&s_msg_res_master);
 		}
 		break;
 
 		case CMD_MASTER_READ:
 		{
-
+			
 		}
 		break;
 
 		case CMD_MASTER_WRITE:
 		{
-
+			handle_write_msg(buf+Pos_Len+1,len,&s_msg_res_master);
 		}
 		break;
 
@@ -318,6 +568,197 @@ uint8_t deal_master_cmd(void)
 }
 
 
+#define Adress_Ins_Res		'1'
+
+#define State_None		0
+#define State_Head		1
+#define State_Fun		2
+#define State_Adress	3
+#define State_Length	4
+#define State_Data		5
+#define State_CheckSum	6
+#define State_Tail		7
+
+
+
+#define Max_Dat_Len		248
+static uint8_t s_datbuf[Max_Dat_Len+4];
+
+
+
+uint8_t analyseDatFromMaster(uint8_t address ,uint8_t **bufout)
+{
+
+	uint16_t rc=0;
+	uint8_t dat=0;
+	static uint8_t st=State_Head;
+	static uint8_t *pr=0;
+	static uint16_t len=0;
+
+	*bufout=NULL;
+
+
+	while(read_usart3_char(&dat)!=0)
+	{
+
+		rc++;
+		if(rc>256)
+		{
+			goto err_exit;
+		}
+
+		*pr=dat;
+		pr++;
+	
+		switch(st)
+		{
+	
+			case State_Head:
+			{
+				if(dat=='$')
+				{
+					st=State_Fun;
+				}	
+	
+			}
+			break;
+	
+			case State_Fun:
+			{
+				if((dat<'A')||(dat>'Z'))
+				{
+					goto err_exit;
+				}	
+
+				st=State_Adress;
+			}
+			break;
+	
+			case State_Adress:
+			{
+				if(dat!=address)
+				{
+					goto err_exit;	
+				}
+				st=State_Length;
+				
+			}
+			break;
+	
+			case State_Length:
+			{
+				if(dat>Max_Dat_Len)
+				{
+					goto err_exit;
+				}
+				len=dat;
+				if(len==0)
+				{
+					st=State_CheckSum;
+					len=2;
+				}
+				else
+				{
+					st=State_Data;
+				}
+			}
+			break;
+	
+			case State_Data:
+			{
+				len--;
+				
+				if(len>0)
+				{
+					
+				}
+				else
+				{
+					len=2;
+					st=State_CheckSum;
+				}
+				
+			}
+			break;
+	
+			case State_CheckSum:
+			{
+				len--;
+				if(len>0)
+				{
+
+				}
+				else
+				{
+					len=2;
+					st=State_Tail;
+				}
+			}
+			break;
+	
+			case State_Tail:
+			{
+				len--;
+				if(len>0)
+				{
+
+				}
+				else
+				{
+					len=0;
+					goto ok_exit;
+				}
+	
+			}
+			break;
+	
+			default:
+				break;
+	
+		}
+
+	}
+
+noComplete_exit:
+	return 0;
+
+
+	
+ok_exit:
+	st=State_Head;
+	pr=s_datbuf;
+	*bufout=s_datbuf;
+	return 1;
+
+err_exit:
+
+	st=State_Head;
+	pr=s_datbuf;
+	return 0xff;
+	
+}
+
+
+
+
+
+
+
+uint8_t loop_ins_res(void)
+{
+	uint8_t *buf=NULL;
+	uint8_t st=0;
+
+	st=analyseDatFromMaster(Adress_Ins_Res,&buf);
+
+	if((st==1)&&(buf!=NULL))
+	{
+		deal_master_cmd(buf);
+	}
+
+
+	return 1;
+}
 
 
 
