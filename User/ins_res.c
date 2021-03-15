@@ -7,7 +7,7 @@
 #include "uart3.h"
 #include "uart1.h"
 
-
+#include "timer2.h"
 
 
 #define CMD_MASTER_INIT				'I'
@@ -84,8 +84,36 @@ uint32_t init_ins_res_port(void)
 	return FUN_OK;
 }
 
+uint32_t init_led_port(void)
+{
+	gpioConfig(LED1	,1);
+	SetPinOutput(LED1,0);
 
+	gpioConfig(LED2	,1);
+	SetPinOutput(LED2,0);
 
+	gpioConfig(LED3	,1);
+	SetPinOutput(LED3,0);
+
+	gpioConfig(LED4	,1);
+	SetPinOutput(LED4,0);
+
+	return FUN_OK;
+}
+uint32_t tog_pin_port(void *pin)
+{
+		
+	if(GetgpioInput(pin)==1)
+	{
+		SetPinOutput(pin,0);
+	}
+	else
+	{
+		SetPinOutput(pin,1);
+	}
+
+	return FUN_OK;
+}
 
 /***********************************************
 *fun     :按照给定的dat,一次将其bit为1的对应的引脚,clear为0.
@@ -753,12 +781,22 @@ uint32_t loop_ins_res(void)
 {
 	uint8_t *buf=NULL;
 	uint8_t st=0;
+	uint32_t localtime=0;
 
 	st=getDatFromMaster(Adress_Ins_Res,&buf);
 
 	if((st==1)&&(buf!=NULL))
 	{
 		deal_master_cmd(buf);
+	}
+
+	localtime=timer2_get_clock();
+	if(localtime%500==0)
+	{
+		tog_pin_port(LED1);
+		tog_pin_port(LED2);
+		tog_pin_port(LED3);
+		tog_pin_port(LED4);
 	}
 
 

@@ -1,4 +1,6 @@
 #include "include.h"
+#include "ins_res.h"
+#include "uart3.h"
 /*---------------------------------------------------------------------------*/
 /* function: main                                                            */
 /*---------------------------------------------------------------------------*/
@@ -16,13 +18,18 @@ int main(void)
 	NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x0000);
 	BKP_DeInit();
 	RCC_Configuration();
-	hc574_init();
+//	hc574_init();
 	uart1_dma_init();
+	uart3_dma_init();
 	TIM2_init();
+
+	init_ins_res_port();
+
+	
 	while(1)
 	{
 		delay_us(relay_time);
-		SYS_WORK();
+		loop_ins_res();
 	}
 }
 

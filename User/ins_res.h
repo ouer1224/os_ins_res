@@ -69,10 +69,10 @@
 #define ClearPortOutput(Port,val)		__setPortOutput((GPIO_TypeDef*)(((uint32_t)Port)&0xffffff00),BRR,val)
 
 #endif
-#define __getGpioInput(port,pin,reg)		(((port)->reg>>(pin)))0x01)
+#define __getGpioInput(port,pin,reg)		((((port)->reg)>>(pin))&0x01)
 
-#define GetgpioInput(Pin)					__operaGpioInput(Pin&0xffffff00,Pin&0xff,IDR)		
-#define GetPortInput(Port)					((Port)->IDR)
+#define GetgpioInput(Pin)					__getGpioInput((GPIO_TypeDef*)(((uint32_t)Pin)&0xffffff00),(uint32_t)Pin&0xff,IDR)		
+#define GetPortInput(Port)					((GPIO_TypeDef*)(Port)->IDR)
 
 #define gpioConfig(Pin,direction)		__compareAB((uint32_t)(Pin)&0xff,8)?\
 		__gpioConfig(\
@@ -163,6 +163,10 @@
 #define Pin_DB7				PORTA_P4
 
 
+#define LED1				PORTC_P9
+#define LED2				PORTA_P8
+#define LED3				PORTA_P11
+#define LED4				PORTA_P12
 
 
 
@@ -200,6 +204,9 @@ typedef struct
 
 
 
+uint32_t loop_ins_res(void);
+uint32_t init_ins_res_port(void);
+uint32_t tog_pin_port(void *pin);
 
 
 
