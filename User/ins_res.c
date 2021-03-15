@@ -29,7 +29,7 @@ Msg_res_master s_msg_res_master=
 *var     :
 *return  :
 ************************************************/
-uint8_t init_ins_res_port(void)
+uint32_t init_ins_res_port(void)
 {
 
 	gpioConfig(Lock_Neg_Relay_1 ,1);
@@ -76,7 +76,7 @@ uint8_t init_ins_res_port(void)
 	SetPinOutput(Pin_DB7,0);
 
 	
-	return 1;
+	return FUN_OK;
 }
 
 
@@ -88,7 +88,7 @@ uint8_t init_ins_res_port(void)
 *var     :
 *return  :
 ************************************************/
-uint8_t openRelayGroup(uint8_t dat,uint32_t group)
+uint32_t openRelayGroup(uint8_t dat,uint32_t group)
 {
 	uint32_t i=0;
 
@@ -111,7 +111,7 @@ uint8_t openRelayGroup(uint8_t dat,uint32_t group)
 	SetPinOutput(group,0);
 
 
-	return 1;
+	return FUN_OK;
 }
 
 
@@ -121,7 +121,7 @@ uint8_t openRelayGroup(uint8_t dat,uint32_t group)
 *var     :
 *return  :
 ************************************************/
-uint8_t closeRelayGroup(uint8_t dat,uint32_t group)
+uint32_t closeRelayGroup(uint8_t dat,uint32_t group)
 {
 	uint32_t i=0;
 
@@ -143,51 +143,51 @@ uint8_t closeRelayGroup(uint8_t dat,uint32_t group)
 	SetPinOutput(group,0);
 
 
-	return 1;
+	return FUN_OK;
 }
 
 
 
-uint8_t OpenSelectPosRelay(uint32_t opendat)
+uint32_t OpenSelectPosRelay(uint32_t opendat)
 {
 	
 	openRelayGroup((opendat>>0)&0xff,(uint32_t)Lock_Pos_Relay_1);
 	openRelayGroup((opendat>>8)&0xff,(uint32_t)Lock_Pos_Relay_2);
 	openRelayGroup((opendat>>16)&0xff,(uint32_t)Lock_Pos_Relay_3);
 
-	return 1;
+	return FUN_OK;
 }
 
-uint8_t OpenSelectNegRelay(uint32_t opendat)
+uint32_t OpenSelectNegRelay(uint32_t opendat)
 {
 	
 	openRelayGroup((opendat>>0)&0xff,(uint32_t)Lock_Neg_Relay_1);
 	openRelayGroup((opendat>>8)&0xff,(uint32_t)Lock_Neg_Relay_2);
 	openRelayGroup((opendat>>16)&0xff,(uint32_t)Lock_Neg_Relay_3);
 
-	return 1;
+	return FUN_OK;
 }
 
 
 
-uint8_t CloseSelectPosRelay(uint32_t closedat)
+uint32_t CloseSelectPosRelay(uint32_t closedat)
 {
 	
 	openRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Pos_Relay_1);
 	openRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Pos_Relay_2);
 	openRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Pos_Relay_3);
 
-	return 1;
+	return FUN_OK;
 }
 
-uint8_t CloseSelectNegRelay(uint32_t closedat)
+uint32_t CloseSelectNegRelay(uint32_t closedat)
 {
 	
 	openRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Neg_Relay_1);
 	openRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Neg_Relay_2);
 	openRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Neg_Relay_3);
 
-	return 1;
+	return FUN_OK;
 }
 
 /***********************************************
@@ -300,9 +300,9 @@ uint32_t setLocalResGnd(uint32_t val)
 *fun     :发送Msg_res_master中的报文信息
 *name    :
 *var     :
-*return  :返回值为0xff时,表示错误,返回值为1时,发送成功
+*return  :返回值为0xffff ffff时,表示错误,返回值为1时,发送成功
 ************************************************/
-uint8_t send_msg_res(Msg_res_master * msg)
+uint32_t send_msg_res(Msg_res_master * msg)
 {
 	uint32_t i=0;
 	uint32_t len=0;
@@ -311,7 +311,7 @@ uint8_t send_msg_res(Msg_res_master * msg)
 
 	if((msg==NULL)||((msg->pr==NULL)&&(msg->msg_head.len!=0)))
 	{	
-		return 0xff;
+		return FUN_ERR;
 	}	
 
 	len=sizeof(msg->msg_head);
@@ -336,7 +336,7 @@ uint8_t send_msg_res(Msg_res_master * msg)
 	}
 
 
-	return 1;
+	return FUN_OK;
 }
 
 /***********************************************
@@ -359,12 +359,12 @@ uint32_t cal_checksum(uint8_t *buf,uint32_t len)
 
 
 static uint8_t s_dat_inquire[]="INSU_RES";
-uint8_t handle_inquire_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
+uint32_t handle_inquire_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 {
 
 	if(len!=0)
 	{
-		return 0xff;
+		return FUN_ERR;
 	}
 
 	msg->msg_head.len=sizeof(s_dat_inquire)-2;
@@ -379,7 +379,7 @@ uint8_t handle_inquire_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
 
 	send_msg_res(msg);
-	return 1;
+	return FUN_OK;
 }
 
 static uint8_t s_buf_write[12];
@@ -455,7 +455,7 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	return FUN_OK;
 }
 
-uint32_t handle_red_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
+uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 {
 
 	uint32_t *pr=NULL;
@@ -488,7 +488,7 @@ uint32_t handle_red_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 
 
 
-uint8_t judge_checkSum(uint8_t *buf,uint8_t len,uint16_t checksum)
+uint32_t judge_checkSum(uint8_t *buf,uint8_t len,uint16_t checksum)
 {
 	uint32_t i=0;
 	uint32_t check=0;
@@ -499,10 +499,10 @@ uint8_t judge_checkSum(uint8_t *buf,uint8_t len,uint16_t checksum)
 	check%=0xffff;
 	if(check!=checksum)
 	{
-		return 0;
+		return FUN_ERR;
 	}
 
-	return 1;
+	return FUN_OK;
 }
 
 
@@ -511,7 +511,7 @@ uint8_t judge_checkSum(uint8_t *buf,uint8_t len,uint16_t checksum)
 #define Pos_Len		3
 
 
-uint8_t deal_master_cmd(uint8_t *buf)
+uint32_t deal_master_cmd(uint8_t *buf)
 {
 
 	uint8_t cmd=0;
@@ -527,9 +527,9 @@ uint8_t deal_master_cmd(uint8_t *buf)
 	check=(buf[Pos_Len+len+1]<<8)|(buf[Pos_Len+len+2]);
 
 	rc=judge_checkSum(buf+Pos_Len,len+1,check);
-	if(rc!=1)
+	if(rc!=FUN_OK)
 	{
-		return 0xff;
+		return FUN_ERR;
 	}
 
 
@@ -549,7 +549,7 @@ uint8_t deal_master_cmd(uint8_t *buf)
 
 		case CMD_MASTER_READ:
 		{
-			
+			handle_read_msg(buf+Pos_Len+1,len,&s_msg_res_master);
 		}
 		break;
 
@@ -564,7 +564,7 @@ uint8_t deal_master_cmd(uint8_t *buf)
 	}
 
 	
-	return 1;
+	return FUN_OK;
 }
 
 
@@ -586,7 +586,7 @@ static uint8_t s_datbuf[Max_Dat_Len+4];
 
 
 
-uint8_t analyseDatFromMaster(uint8_t address ,uint8_t **bufout)
+uint32_t analyseDatFromMaster(uint8_t address ,uint8_t **bufout)
 {
 
 	uint16_t rc=0;
@@ -720,7 +720,7 @@ uint8_t analyseDatFromMaster(uint8_t address ,uint8_t **bufout)
 	}
 
 noComplete_exit:
-	return 0;
+	return FUN_NO_COMPLETE;
 
 
 	
@@ -728,13 +728,13 @@ ok_exit:
 	st=State_Head;
 	pr=s_datbuf;
 	*bufout=s_datbuf;
-	return 1;
+	return FUN_OK;
 
 err_exit:
 
 	st=State_Head;
 	pr=s_datbuf;
-	return 0xff;
+	return FUN_ERR;
 	
 }
 
@@ -744,7 +744,7 @@ err_exit:
 
 
 
-uint8_t loop_ins_res(void)
+uint32_t loop_ins_res(void)
 {
 	uint8_t *buf=NULL;
 	uint8_t st=0;
@@ -757,7 +757,7 @@ uint8_t loop_ins_res(void)
 	}
 
 
-	return 1;
+	return FUN_OK;
 }
 
 
