@@ -3,7 +3,12 @@
 
 #include "ins_res.h"
 
+
 #include "uart3.h"
+#include "uart1.h"
+
+
+
 
 #define CMD_MASTER_INIT				'I'
 #define CMD_MASTER_INQUIRE			'Q'
@@ -318,21 +323,21 @@ uint32_t send_msg_res(Msg_res_master * msg)
 	pr=(void *)&(msg->msg_head);
 	for(i=0;i<len;i++)
 	{
-		USART3_SendByte(pr[i]);
+		send_master_char(pr[i]);
 	}
 
 	len=msg->msg_head.len;
 	pr=msg->pr;
 	for(i=0;i<len;i++)
 	{
-		USART3_SendByte(pr[i]);
+		send_master_char(pr[i]);
 	}
 	
 	len=sizeof(msg->msg_tail);
 	pr=(void *)&(msg->msg_tail);
 	for(i=0;i<len;i++)
 	{
-		USART3_SendByte(pr[i]);
+		send_master_char(pr[i]);
 	}
 
 
@@ -586,7 +591,7 @@ static uint8_t s_datbuf[Max_Dat_Len+4];
 
 
 
-uint32_t analyseDatFromMaster(uint8_t address ,uint8_t **bufout)
+uint32_t getDatFromMaster(uint8_t address ,uint8_t **bufout)
 {
 
 	uint16_t rc=0;
@@ -598,7 +603,7 @@ uint32_t analyseDatFromMaster(uint8_t address ,uint8_t **bufout)
 	*bufout=NULL;
 
 
-	while(read_usart3_char(&dat)!=0)
+	while(read_master_char(&dat)!=0)
 	{
 
 		rc++;
@@ -749,7 +754,7 @@ uint32_t loop_ins_res(void)
 	uint8_t *buf=NULL;
 	uint8_t st=0;
 
-	st=analyseDatFromMaster(Adress_Ins_Res,&buf);
+	st=getDatFromMaster(Adress_Ins_Res,&buf);
 
 	if((st==1)&&(buf!=NULL))
 	{
