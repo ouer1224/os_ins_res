@@ -75,16 +75,28 @@ void start_tim2(u8 on)
 
 void TIM2_IRQHandler(void)
 {
+	static uint32_t i=0;
 	TIM_Cmd(TIM2, DISABLE);
 	if(TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
 	{
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);  //清除TIMx的中断待处理位:TIM 中断源
 		//系统时钟
-		timer2_clock += timer2_ms;
+		timer2_clock ++;//= timer2_ms;
 		//延时计数
 		delay_count += timer2_ms;
 		//去抖计数器
 		timer2_shake++;
+#if 1
+		i++;
+		if(((i/250)%2)==0)
+		{
+			//GPIOA->BSRR=0x01<<8;
+		}
+		else
+		{
+			//GPIOA->BRR=0x01<<8;
+		}
+#endif	
 		//		//软狗超时5min, 死等，饿死硬狗
 		//		timer3_dog_clock+=timer3_ms;
 		//		if(timer3_dog_clock>300000)while(1);

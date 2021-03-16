@@ -9,6 +9,8 @@
 
 #include "timer2.h"
 
+#include "os_sprintf.h"
+
 
 #define CMD_MASTER_INIT				'I'
 #define CMD_MASTER_INQUIRE			'Q'
@@ -89,27 +91,36 @@ uint32_t init_led_port(void)
 	gpioConfig(LED1	,1);
 	SetPinOutput(LED1,0);
 
+	msg_out("0_A.CRH=%x CRL=%x\n",GPIOA->CRH,GPIOA->CRL);
+	
 	gpioConfig(LED2	,1);
 	SetPinOutput(LED2,0);
+	
+	msg_out("led2 A.CRH=%x CRL=%x\n",GPIOA->CRH,GPIOA->CRL);
 
 	gpioConfig(LED3	,1);
 	SetPinOutput(LED3,0);
+	msg_out("led3 A.CRH=%x CRL=%x\n",GPIOA->CRH,GPIOA->CRL);
 
 	gpioConfig(LED4	,1);
 	SetPinOutput(LED4,0);
+	msg_out("led4 A.CRH=%x CRL=%x\n",GPIOA->CRH,GPIOA->CRL);
 
 	return FUN_OK;
 }
 uint32_t tog_pin_port(void *pin)
 {
 		
-	if(GetgpioInput(pin)==1)
+	if(GetgpioInput(pin)!=0)
+	//if(((GPIOC->IDR>>9)&0x01)!=0)
 	{
 		SetPinOutput(pin,0);
+		//GPIOC->BRR=0x01<<9;
 	}
 	else
 	{
 		SetPinOutput(pin,1);
+		//GPIOC->BSRR=0x01<<9;
 	}
 
 	return FUN_OK;
@@ -782,22 +793,67 @@ uint32_t loop_ins_res(void)
 	uint8_t *buf=NULL;
 	uint8_t st=0;
 	uint32_t localtime=0;
+	static uint32_t pre_time=0;
+	static uint8_t step=0;
+	static uint32_t i=0;
 
-	st=getDatFromMaster(Adress_Ins_Res,&buf);
+	//st=getDatFromMaster(Adress_Ins_Res,&buf);
 
 	if((st==1)&&(buf!=NULL))
 	{
 		deal_master_cmd(buf);
 	}
+	
 
-	localtime=timer2_get_clock();
-	if(localtime%500==0)
+	switch(step)
 	{
-		tog_pin_port(LED1);
-		tog_pin_port(LED2);
-		tog_pin_port(LED3);
-		tog_pin_port(LED4);
+		case 0:
+		{
+			
+			localtime=timer2_get_clock();
+			if(pre_time!=localtime)
+			{
+				i++;
+				if((i%250)==0)
+				{
+					step++;
+				}
+			}
+			
+			pre_time=localtime;
+
+			
+		}
+		break;
+
+		case 1:
+		{
+			tog_pin_port(LED1);
+			step++;
+
+			os_printf("task %d run\r\n",timer2_get_clock());
+			
+		}
+		break;
+
+		case 2:
+		{
+			tog_pin_port(LED2);
+			tog_pin_port(LED3);
+			tog_pin_port(LED4);
+			step=0;
+			//USART1_SendByte('2');
+		}
+		break;
+
+		default:
+			step=0;
+		break;
+
 	}
+
+
+	
 
 
 	return FUN_OK;

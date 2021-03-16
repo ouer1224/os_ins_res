@@ -42,12 +42,12 @@
 #define CLOSE_RELAY		0
 
 
-#define __gpioConfigInput(port,pin,reg)	(port)->reg=((port)->reg&(~(0x0f<<((pin)*4))))|(((01<<2)|(00))<<((pin)*4))
-#define __gpioConfigOutput(port,pin,fun,reg)	(port)->reg=((port)->reg&(~(0x0f<<((pin)*4))))|(((11<<2)|(fun))<<((pin)*4))
+#define __gpioConfigInput(port,pin,reg)	(port)->reg=((port)->reg&(~(0x0f<<((pin)*4))))|(((0x01<<2)|(00))<<((pin)*4))
+#define __gpioConfigOutput(port,pin,fun,reg)	(port)->reg=((port)->reg&(~(0x0f<<((pin)*4))))|(((fun<<2)|(0x03))<<((pin)*4))
 
 #define __gpioConfig(port,pin,direction,reg) (direction==0?(__gpioConfigInput(port,pin,reg)):(__gpioConfigOutput(port,pin,00,reg)))
 
-#define __compareAB(a,b)		((a)>(b)?1:0)
+#define __compareAB(a,b)		((a)>=(b)?1:0)
 
 
 
@@ -77,7 +77,7 @@
 #define gpioConfig(Pin,direction)		__compareAB((uint32_t)(Pin)&0xff,8)?\
 		__gpioConfig(\
 		(GPIO_TypeDef*)((uint32_t)(Pin)&0xffffff00),\
-		(uint32_t)(Pin)&0xff,\
+		(uint32_t)(Pin)&0xff-8,\
 		direction,CRH):\
 		__gpioConfig(\
 		(GPIO_TypeDef*)((uint32_t)(Pin)&0xffffff00),\
@@ -206,6 +206,7 @@ typedef struct
 
 uint32_t loop_ins_res(void);
 uint32_t init_ins_res_port(void);
+uint32_t init_led_port(void);
 uint32_t tog_pin_port(void *pin);
 
 
