@@ -16,12 +16,9 @@ u8 REALY_DATA_1, REALY_DATA_2, REALY_DATA_3, REALY_DATA_4, REALY_DATA_5;
 int main(void)
 {
 	/* Set the Vector Table base location at 0x3000 */
-	uint32_t count=0;
-	uint32_t i=0;
 	NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x0000);
 	BKP_DeInit();
 	RCC_Configuration();
-//	hc574_init();
 	uart1_dma_init();
 	uart3_dma_init();
 	TIM2_init();
@@ -30,6 +27,7 @@ int main(void)
 	init_led_port();
 
 
+	msg_out("\nI am Ins Res Bord\n");
 
 #if 0
 	GPIOC->CRH=0x03<<4;
@@ -61,19 +59,7 @@ int main(void)
 	{
 		delay_us(relay_time);
 		loop_ins_res();
-#if 1
-		i++;
-		if(i%0xff==0)
-		{
-			count++;
-		}
-		if(i%0xfff==0)
-		{
-			//GPIOC->BSRR=0x01<<9;
-			//USART1_SendByte('A');
-		}
 
-#endif	
 	}
 }
 

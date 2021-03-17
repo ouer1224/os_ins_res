@@ -23,8 +23,8 @@
 #endif
 
 
-#define debugUartPort	1
-#define comUartPort		3
+
+#define comUartPort		1
 
 
 #if comUartPort==3

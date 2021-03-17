@@ -543,6 +543,7 @@ uint32_t judge_checkSum(uint8_t *buf,uint8_t len,uint16_t checksum)
 	check%=0xffff;
 	if(check!=checksum)
 	{
+		msg_out("judge=%x\n",check);
 		return FUN_ERR;
 	}
 
@@ -568,11 +569,15 @@ uint32_t deal_master_cmd(uint8_t *buf)
 	cmd=buf[Pos_Cmd];
 	len=buf[Pos_Len];
 
-	check=(buf[Pos_Len+len+1]<<8)|(buf[Pos_Len+len+2]);
+	check=(buf[Pos_Len+len+1]<<0)|(buf[Pos_Len+len+2]<<8);
 
-	rc=judge_checkSum(buf+Pos_Len,len+1,check);
+
+
+	rc=judge_checkSum(buf+Pos_Len+1,len,check);
 	if(rc!=FUN_OK)
 	{
+		msg_out("\ncheck err\n");
+		msg_out("check=%x %x\n",buf[Pos_Len+len+1],buf[Pos_Len+len+2]);		
 		return FUN_ERR;
 	}
 
@@ -629,14 +634,13 @@ uint32_t deal_master_cmd(uint8_t *buf)
 static uint8_t s_datbuf[Max_Dat_Len+4];
 
 
-
 uint32_t getDatFromMaster(uint8_t address ,uint8_t **bufout)
 {
 
 	uint16_t rc=0;
 	uint8_t dat=0;
 	static uint8_t st=State_Head;
-	static uint8_t *pr=0;
+	static uint8_t *pr=s_datbuf;
 	static uint16_t len=0;
 
 	*bufout=NULL;
@@ -646,7 +650,7 @@ uint32_t getDatFromMaster(uint8_t address ,uint8_t **bufout)
 	{
 
 		rc++;
-		if(rc>256)
+		if(rc>Max_Dat_Len)
 		{
 			goto err_exit;
 		}
@@ -663,6 +667,11 @@ uint32_t getDatFromMaster(uint8_t address ,uint8_t **bufout)
 				{
 					st=State_Fun;
 				}	
+				else
+				{
+					pr=s_datbuf;
+					rc=0;
+				}
 	
 			}
 			break;
@@ -750,6 +759,7 @@ uint32_t getDatFromMaster(uint8_t address ,uint8_t **bufout)
 				else
 				{
 					len=0;
+					
 					goto ok_exit;
 				}
 	
@@ -769,13 +779,14 @@ noComplete_exit:
 
 	
 ok_exit:
+	rc=0;
 	st=State_Head;
 	pr=s_datbuf;
 	*bufout=s_datbuf;
 	return FUN_OK;
 
 err_exit:
-
+	rc=0;
 	st=State_Head;
 	pr=s_datbuf;
 	return FUN_ERR;
@@ -797,7 +808,7 @@ uint32_t loop_ins_res(void)
 	static uint8_t step=0;
 	static uint32_t i=0;
 
-	//st=getDatFromMaster(Adress_Ins_Res,&buf);
+	st=getDatFromMaster(Adress_Ins_Res,&buf);
 
 	if((st==1)&&(buf!=NULL))
 	{
@@ -814,9 +825,12 @@ uint32_t loop_ins_res(void)
 			if(pre_time!=localtime)
 			{
 				i++;
-				if((i%250)==0)
+				if((i%500)==0)
 				{
 					step++;
+					tog_pin_port(LED3);
+					tog_pin_port(LED4);
+
 				}
 			}
 			
@@ -828,21 +842,49 @@ uint32_t loop_ins_res(void)
 
 		case 1:
 		{
-			tog_pin_port(LED1);
-			step++;
 
-			os_printf("task %d run\r\n",timer2_get_clock());
+			localtime=timer2_get_clock();
+			if(pre_time!=localtime)
+			{
+				i++;
+				if((i%500)==0)
+				{
+					step++;
+					tog_pin_port(LED1);
+					os_printf("task %d run\r\n",timer2_get_clock());
+
+				}
+			}
+			
+			pre_time=localtime;
+
+			
 			
 		}
 		break;
 
 		case 2:
 		{
-			tog_pin_port(LED2);
-			tog_pin_port(LED3);
-			tog_pin_port(LED4);
-			step=0;
-			//USART1_SendByte('2');
+
+			localtime=timer2_get_clock();
+			if(pre_time!=localtime)
+			{
+				i++;
+				if((i%500)==0)
+				{
+					tog_pin_port(LED2);
+
+					step=0;
+
+				}
+			}
+			
+			pre_time=localtime;
+
+
+		
+
+
 		}
 		break;
 

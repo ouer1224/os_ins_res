@@ -29,6 +29,7 @@ void DMA_Config_Channel4(void);
 void USART1_SendByte(unsigned char temp);
 void Uart1_SendArray(u8 *pData,u16 Leng);
 void uart1_dma_init(void);
+u8 read_usart1_char(u8 *ch);
 u8 get_packet1(void);
 
 #endif
