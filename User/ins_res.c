@@ -217,9 +217,9 @@ uint32_t OpenSelectNegRelay(uint32_t opendat)
 uint32_t CloseSelectPosRelay(uint32_t closedat)
 {
 	
-	openRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Pos_Relay_1);
-	openRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Pos_Relay_2);
-	openRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Pos_Relay_3);
+	closeRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Pos_Relay_1);
+	closeRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Pos_Relay_2);
+	closeRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Pos_Relay_3);
 
 	return FUN_OK;
 }
@@ -227,9 +227,9 @@ uint32_t CloseSelectPosRelay(uint32_t closedat)
 uint32_t CloseSelectNegRelay(uint32_t closedat)
 {
 	
-	openRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Neg_Relay_1);
-	openRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Neg_Relay_2);
-	openRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Neg_Relay_3);
+	closeRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Neg_Relay_1);
+	closeRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Neg_Relay_2);
+	closeRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Neg_Relay_3);
 
 	return FUN_OK;
 }
@@ -263,13 +263,19 @@ uint32_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t N
 
 	opendat=~Pinput;
 	closedat=Pinput;
+
+	msg_out("OB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
 	OpenSelectPosRelay(opendat);
 	CloseSelectPosRelay(closedat);
 
+	msg_out("PB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
+
+
 	opendat=~Ninput;
 	closedat=Ninput;
-	OpenSelectPosRelay(opendat);
-	CloseSelectPosRelay(closedat);
+	OpenSelectNegRelay(opendat);
+	CloseSelectNegRelay(closedat);
+	msg_out("NB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
 
 
 #endif
@@ -518,6 +524,9 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 				setLocalResVcc(*pr_dat_vcc);
 				setLocalResGnd(*pr_dat_gnd);
 			}
+
+			msg_out("Pinput=%x Plocal=%x\n",Pinput,Plocal);
+			msg_out("Ninput=%x Nlocal=%x\n",Ninput,Nlocal);
 	
 		}
 
@@ -861,6 +870,7 @@ uint32_t loop_ins_res(void)
 	if((st==1)&&(buf!=NULL))
 	{
 		deal_master_cmd(buf);
+		
 	}
 	
 
@@ -878,7 +888,7 @@ uint32_t loop_ins_res(void)
 					step++;
 					tog_pin_port(LED3);
 					tog_pin_port(LED4);
-
+					
 				}
 			}
 			
@@ -900,6 +910,7 @@ uint32_t loop_ins_res(void)
 					step++;
 					tog_pin_port(LED1);
 					os_printf("task %d run\r\n",timer2_get_clock());
+					
 
 				}
 			}
