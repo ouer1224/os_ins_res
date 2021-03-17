@@ -401,6 +401,54 @@ uint32_t cal_checksum(uint8_t *buf,uint32_t len)
 	return check;
 }
 
+static uint8_t s_dat_init[12];
+uint32_t handle_init_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
+{
+	uint32_t i=0;
+	if(len==0)
+	{
+		return FUN_ERR;
+	}
+
+	s_dat_init[0]='$';
+	s_dat_init[1]='I';
+	s_dat_init[2]='0';
+	s_dat_init[3]=len+4;
+	s_dat_init[4]=0;
+	s_dat_init[5]=0;
+	s_dat_init[6]=0;
+	s_dat_init[7]=0;
+
+
+	for(i=0;i<8;i++)
+	{
+		send_master_char(s_dat_init[i]);
+	}
+
+	for(i=0;i<len;i++)
+	{
+		send_master_char(buf[i]);
+	}
+
+	i=cal_checksum(buf,len);
+	i+=s_dat_init[4];
+	i+=s_dat_init[5];
+	i+=s_dat_init[6];
+	i+=s_dat_init[7];
+	
+	s_dat_init[0]=i;
+	s_dat_init[1]=i>>8;
+	s_dat_init[2]=0x0d;
+	s_dat_init[3]=0x0a;
+	
+	for(i=0;i<4;i++)
+	{
+		send_master_char(s_dat_init[i]);
+	}
+	
+	return FUN_OK;
+}
+
 
 static uint8_t s_dat_inquire[]="INSU_RES";
 uint32_t handle_inquire_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
@@ -411,12 +459,12 @@ uint32_t handle_inquire_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 		return FUN_ERR;
 	}
 
-	msg->msg_head.len=sizeof(s_dat_inquire)-2;
+	msg->msg_head.len=sizeof(s_dat_inquire)-1;
 	msg->msg_head.adress_dest=ADRESS_MASTER;
 	msg->msg_head.funcode=CMD_MASTER_INQUIRE;
 	msg->msg_head.head='$';
 
-	msg->msg_tail.tail=0x0d0a;
+	msg->msg_tail.tail=0x0a0d;
 
 	msg->pr=s_dat_inquire;
 
@@ -487,7 +535,7 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	msg->msg_head.funcode=CMD_MASTER_WRITE;
 	msg->msg_head.head='$';
 
-	msg->msg_tail.tail=0x0d0a;
+	msg->msg_tail.tail=0x0a0d;
 
 	msg->pr=s_buf_write;
 
@@ -518,7 +566,7 @@ uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	msg->msg_head.funcode=CMD_MASTER_READ;
 	msg->msg_head.head='$';
 
-	msg->msg_tail.tail=0x0d0a;
+	msg->msg_tail.tail=0x0a0d;
 
 	msg->pr=s_buf_write;
 
@@ -586,7 +634,7 @@ uint32_t deal_master_cmd(uint8_t *buf)
 	{
 		case CMD_MASTER_INIT:
 		{
-
+			handle_init_msg(buf+Pos_Len+1,len,&s_msg_res_master);
 		}
 		break;
 
