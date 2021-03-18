@@ -1,5 +1,7 @@
 #include"include.h"
 
+#include "../os/task.h"
+#include "ins_res.h"
 
 static u16 timer2_ms = TIMER2_DEFAULT_MS; //记忆定时器周期
 static u32 delay_count = 0; //延时计数器
@@ -90,12 +92,10 @@ void TIM2_IRQHandler(void)
 		i++;
 		if(((i/250)%2)==0)
 		{
-			//GPIOA->BSRR=0x01<<8;
+			tog_pin_port(LED4);
 		}
-		else
-		{
-			//GPIOA->BRR=0x01<<8;
-		}
+
+		//Sys_readyToSwitch();
 #endif	
 		//		//软狗超时5min, 死等，饿死硬狗
 		//		timer3_dog_clock+=timer3_ms;
