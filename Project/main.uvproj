@@ -50,7 +50,7 @@
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
           <DebugInformation>1</DebugInformation>
-          <BrowseInformation>0</BrowseInformation>
+          <BrowseInformation>1</BrowseInformation>
           <ListingPath>.\List\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
@@ -119,7 +119,7 @@
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
           <Simulator>
-            <UseSimulator>0</UseSimulator>
+            <UseSimulator>1</UseSimulator>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -131,7 +131,7 @@
             <RestoreSysVw>1</RestoreSysVw>
           </Simulator>
           <Target>
-            <UseTarget>1</UseTarget>
+            <UseTarget>0</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -144,7 +144,7 @@
             <UsePdscDebugDescription>0</UsePdscDebugDescription>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>6</TargetSelection>
+          <TargetSelection>4</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -469,21 +469,6 @@
               <FileName>os_sprintf.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\os_sprintf.c</FilePath>
-            </File>
-            <File>
-              <FileName>xtos_asm.s</FileName>
-              <FileType>2</FileType>
-              <FilePath>.\xtos_asm.s</FilePath>
-            </File>
-            <File>
-              <FileName>xtos.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User\xtos.c</FilePath>
-            </File>
-            <File>
-              <FileName>xtos.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\User\xtos.h</FilePath>
             </File>
           </Files>
         </Group>
