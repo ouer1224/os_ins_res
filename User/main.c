@@ -2,6 +2,68 @@
 #include "ins_res.h"
 #include "uart3.h"
 #include "os_sprintf.h"
+
+#include "xtos.h"
+
+
+
+
+
+void delay(int c) 
+{
+    for (int i = 0; i < c; i++);
+}
+
+#define TASKA_STK_SIZE 1024
+#define TASKB_STK_SIZE 1024
+static uint32_t taskA_Stk[TASKA_STK_SIZE];
+static uint32_t taskB_Stk[TASKB_STK_SIZE];
+
+static struct xtos_task_struct taskA;
+static struct xtos_task_struct taskB;
+
+void task_switch() 
+{
+    if (gp_xtos_cur_task == &taskA)
+        gp_xtos_next_task = &taskB;
+    else
+        gp_xtos_next_task = &taskA;
+
+    xtos_context_switch();
+}
+
+void taska() {
+    while (1) {
+        //led_set_color(100, 0, 5);
+        
+		for (int i = 0; i < 1000; i++)
+		{
+            delay(10000);
+		}
+		tog_pin_port(LED3);
+		tog_pin_port(LED1);
+        task_switch();
+    }
+}
+
+void taskb() {
+    while (1) {
+        //led_set_color(5, 0, 100);
+        for (int i = 0; i < 1000; i++)
+		{
+            delay(10000);
+		}
+		tog_pin_port(LED4);
+		tog_pin_port(LED2);
+        task_switch();
+    }
+}
+
+
+
+
+
+
 /*---------------------------------------------------------------------------*/
 /* function: main                                                            */
 /*---------------------------------------------------------------------------*/
@@ -25,41 +87,19 @@ int main(void)
 
 	init_ins_res_port();
 	init_led_port();
-
-
-	msg_out("\nI am Ins Res Bord\n");
-
-#if 0
-	GPIOC->CRH=0x03<<4;
-	GPIOC->BRR=0x01<<9;
-
 	
-	GPIOA->CRH|=0x03<<((8-8)*4);
-	GPIOA->BRR=0x01<<8;
-
-
-	GPIOA->CRH|=0x03<<((12-8)*4);
-	GPIOA->BRR=0x01<<12;
-
-
-
-	GPIOA->CRH|=0x03<<((11-8)*4);
-	GPIOA->BRR=0x01<<11;
-#endif	
-
-	GPIOA->CRH|=0x03<<((8-8)*4);
-	GPIOA->BRR=0x01<<8;
-
-	msg_out("GPIOA->CRH=%x\n",GPIOA->CRH);
-	msg_out("GPIOB->CRH=%x\n",GPIOB->CRH);
-	msg_out("GPIOC->CRH=%x\n",GPIOC->CRH);
-
 	
-	while(1)
-	{
-		delay_us(relay_time);
-		loop_ins_res();
+	
+    xtos_create_task(&taskA, taska, &taskA_Stk[TASKA_STK_SIZE - 1]);
+    xtos_create_task(&taskB, taskb, &taskB_Stk[TASKB_STK_SIZE - 1]);
 
-	}
+    gp_xtos_next_task = &taskA;
+
+    xtos_start();
+
+    while (1) {
+
+    }
+	return 1;
 }
 

@@ -50,7 +50,7 @@
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
           <DebugInformation>1</DebugInformation>
-          <BrowseInformation>1</BrowseInformation>
+          <BrowseInformation>0</BrowseInformation>
           <ListingPath>.\List\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
@@ -356,7 +356,7 @@
             <wLevel>2</wLevel>
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
-            <uC99>0</uC99>
+            <uC99>1</uC99>
             <useXO>0</useXO>
             <VariousControls>
               <MiscControls></MiscControls>
@@ -469,6 +469,21 @@
               <FileName>os_sprintf.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\os_sprintf.c</FilePath>
+            </File>
+            <File>
+              <FileName>xtos_asm.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>.\xtos_asm.s</FilePath>
+            </File>
+            <File>
+              <FileName>xtos.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\xtos.c</FilePath>
+            </File>
+            <File>
+              <FileName>xtos.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\User\xtos.h</FilePath>
             </File>
           </Files>
         </Group>
