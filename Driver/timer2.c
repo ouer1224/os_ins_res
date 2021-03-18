@@ -93,9 +93,10 @@ void TIM2_IRQHandler(void)
 		if(((i/250)%2)==0)
 		{
 			tog_pin_port(LED4);
+			
 		}
-
-		//Sys_readyToSwitch();
+		Sys_readyToSwitch();
+	
 #endif	
 		//		//»Ìπ∑≥¨ ±5min, À¿µ»£¨∂ˆÀ¿”≤π∑
 		//		timer3_dog_clock+=timer3_ms;

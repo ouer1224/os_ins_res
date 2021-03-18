@@ -43,12 +43,11 @@ void taska(void)
 	uint32_t count=0;
 	uint32_t i=0;
 
-	//TaskDelay(500);
+	TaskDelay(500);
 	while (1) 
 	{
 		tog_pin_port(LED1);
-		//TaskDelay(800);
-		Sys_readyToSwitch();
+		TaskDelay(800);
 
 	}
 }
@@ -59,13 +58,12 @@ void taskb(void)
 	uint32_t count=0;
 	uint32_t i=0;
 
-	//TaskDelay(800);
+	TaskDelay(800);
 	while (1) 
 	{
 		tog_pin_port(LED2);
-		//TaskDelay(800);
-		Sys_readyToSwitch();
-
+		TaskDelay(800);
+	
 	}
 }
 
@@ -76,12 +74,11 @@ void taskc(void)
 	uint32_t count=0;
 	uint32_t i=0;
 
-	//TaskDelay(1100);
+	TaskDelay(1100);
 	while (1) 
 	{
 		tog_pin_port(LED3);
-		//TaskDelay(800);
-		Sys_readyToSwitch();
+		TaskDelay(800);
 		
 
 	}
@@ -104,16 +101,17 @@ int main(void)
 	tog_pin_port(LED1);
 	tog_pin_port(LED3);
 
+	TIM2_init();
+
 	
 	selfos_create_task(&taskA, taska, &taskA_Stk[TASKA_STK_SIZE - 1],1);  
 	selfos_create_task(&taskB, taskb, &taskB_Stk[TASKB_STK_SIZE - 1],1);  
 	selfos_create_task(&taskC, taskc, &taskC_Stk[TASKC_STK_SIZE - 1],1);
 	
 	
-	TIM2_init();
-	open_all_interruct();
- 	selfos_start();
 	
+ 	selfos_start();
+	open_all_interruct();
 	
     while (1) 
 	{
