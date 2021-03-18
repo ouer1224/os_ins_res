@@ -43,12 +43,12 @@ void taska(void)
 	uint32_t count=0;
 	uint32_t i=0;
 
-	TaskDelay(500);
+	//TaskDelay(500);
 	while (1) 
 	{
 		tog_pin_port(LED1);
-		TaskDelay(800);
-		
+		//TaskDelay(800);
+		Sys_readyToSwitch();
 
 	}
 }
@@ -64,7 +64,7 @@ void taskb(void)
 	{
 		tog_pin_port(LED2);
 		//TaskDelay(800);
-		
+		Sys_readyToSwitch();
 
 	}
 }
@@ -80,8 +80,8 @@ void taskc(void)
 	while (1) 
 	{
 		tog_pin_port(LED3);
-		TaskDelay(800);
-		
+		//TaskDelay(800);
+		Sys_readyToSwitch();
 		
 
 	}
