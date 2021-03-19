@@ -19,10 +19,10 @@ uint32_t sem_creat(SemCB * pr,uint32_t maxVal,uint32_t initVal)
 		return os_false;
 	}
 
-	input_critical_area();
+	//input_critical_area();
 	pr->maxVal=maxVal;
 	pr->curVal=initVal;
-	exit_critical_area();
+	//exit_critical_area();
 
 	return os_true;
 }

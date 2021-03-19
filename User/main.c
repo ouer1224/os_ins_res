@@ -5,6 +5,9 @@
 
 #include "../os/task.h"
 
+#include "../os/mem_manage.h"
+#include "../os/queue.h"
+#include "../os/sem.h"
 
 
 /*---------------------------------------------------------------------------*/
@@ -35,6 +38,11 @@ volatile struct selfos_task_struct taskA;
 volatile struct selfos_task_struct taskB;
 volatile struct selfos_task_struct taskC;
 
+/*--–≈∫≈¡ø----*/
+SemCB testsem;
+
+
+
 
 
 void taska(void) 
@@ -43,11 +51,14 @@ void taska(void)
 	uint32_t count=0;
 	uint32_t i=0;
 
+	msg_out("a run\n");
 	TaskDelay(500);
 	while (1) 
 	{
+		msg_out("a is running\n");
 		tog_pin_port(LED1);
 		TaskDelay(500);
+		
 
 	}
 }
@@ -57,10 +68,12 @@ void taskb(void)
 	uint32_t rc=0;
 	uint32_t count=0;
 	uint32_t i=0;
-
+	msg_out("b run\n");
 	TaskDelay(800);
 	while (1) 
 	{
+		msg_out("b send sem\n");
+		sem_release(&testsem);
 		tog_pin_port(LED2);
 		TaskDelay(1000);
 	
@@ -73,12 +86,17 @@ void taskc(void)
 	uint32_t rc=0;
 	uint32_t count=0;
 	uint32_t i=0;
-
+	msg_out("c run\n");
 	TaskDelay(1100);
 	while (1) 
 	{
-		tog_pin_port(LED3);
-		TaskDelay(2000);
+		rc=sem_acquire(&testsem,4000);
+		if(rc==os_true)
+		{
+			msg_out("c got sem\n");
+			tog_pin_port(LED3);
+		}
+		//TaskDelay(2000);
 		
 
 	}
@@ -103,13 +121,19 @@ int main(void)
 
 	TIM2_init();
 
+
+
 	
 	selfos_create_task(&taskA, taska, &taskA_Stk[TASKA_STK_SIZE - 1],1);  
 	selfos_create_task(&taskB, taskb, &taskB_Stk[TASKB_STK_SIZE - 1],1);  
 	selfos_create_task(&taskC, taskc, &taskC_Stk[TASKC_STK_SIZE - 1],1);
 
  	selfos_start();
+
+	sem_creat(&testsem, 1,1);
+
 	open_all_interruct();
+
 	
     while (1) 
 	{
