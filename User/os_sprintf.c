@@ -164,6 +164,15 @@ uint32_t os_printf(uint8_t *str , ...)
 					pr_buf+=len-1;
 				}
 				break;
+				case 'c':
+				{
+					val_d=va_arg(ap,int);
+					len=1;
+					*pr_buf=val_d;
+					pr_buf+=len-1;
+
+				}
+				break;
 				
 				default:
 				break;

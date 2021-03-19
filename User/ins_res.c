@@ -714,6 +714,8 @@ uint32_t getDatFromMaster(uint8_t address ,uint8_t **bufout)
 
 		*pr=dat;
 		pr++;
+
+		//msg_out("%d ",dat);
 	
 		switch(st)
 		{

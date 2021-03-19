@@ -78,33 +78,43 @@ void fun_taska(void)
 	uint32_t i=0;
 	uint8_t *pr_rcv=NULL;
 	uint32_t len=0;
-	uint8_t buf[12]=0;
+	uint8_t buf[48]=0;
+	uint8_t *pr=buf;
 
 	msg_out("a run\n");
 	TaskDelay(500);
 	while (1) 
 	{
 		
+		
 		tog_pin_port(LED1);
-		TaskDelay(500);
-		msg_out("deal ok\n");
-
-
-		rc=get_dat_from_queue(&queue_uart1_rcv,&pr_rcv,5000,0);
-		if(rc!=NULL)
+		rc=get_dat_from_queue(&queue_uart1_rcv,&pr_rcv,100,0);
+		if(rc==os_true)
 		{
-			len=pr_rcv[0];
-			os_memcpy(buf,pr_rcv+1,len);
+			len+=pr_rcv[0];
+			os_memcpy(pr,pr_rcv+1,pr_rcv[0]);
 			free_mem_to_pool(&pr_rcv);
-
-
-			msg_out("\n dat_rcv = ");
-			for(i=0;i<len;i++)
-			{
-				msg_out("%d ",buf[i]);	
-			}
-			msg_out("\n");
+			pr=pr+len;
 		}
+		else
+		{
+			if(len!=0)
+			{
+				msg_out("\n rc= %x dat_rcv = ",rc);
+				for(i=0;i<len;i++)
+				{
+					msg_out("%x ",buf[i]);	
+				}
+				msg_out("\n");
+				
+				deal_master_cmd(buf);
+				
+			}
+			len=0;
+			pr=buf;
+
+		}
+		
 
 		
 	}
@@ -122,7 +132,7 @@ void fun_taskb(void)
 	time_pre=get_OS_time();
 	while (1) 
 	{
-		msg_out("b send sem\n");
+		//msg_out("b send sem\n");
 		sem_release(&testsem);
 		tog_pin_port(LED2);
 		TaskDelay(1000);
@@ -130,7 +140,7 @@ void fun_taskb(void)
 		time_now=get_OS_time();
 		if(time_now!=time_pre)
 		{
-			msg_out("--diff time=%d\n",time_now-time_pre);
+			//msg_out("--diff time=%d\n",time_now-time_pre);
 		}
 
 		time_pre=time_now;
@@ -150,7 +160,7 @@ void fun_taskc(void)
 		rc=sem_acquire(&testsem,4000);
 		if(rc==os_true)
 		{
-			msg_out("c got sem\n");
+			//msg_out("c got sem\n");
 			tog_pin_port(LED3);
 		}
 		//TaskDelay(2000);
@@ -159,14 +169,18 @@ void fun_taskc(void)
 	}
 }
 
+
+#define Adress_Ins_Res		'1'
+
+
 void task_uart1_rcv(void)
 {
 	uint8_t *pr_send=NULL;
-	uint8_t buf[8];
+	uint8_t *pr_dat=NULL;
 	uint32_t st=0;
 	uint32_t rc=0;
 	uint32_t i=0;
-	
+	uint32_t len=0;
 
 	TaskDelay(200);
 	msg_out("uart1 rcv run\n");
@@ -174,33 +188,52 @@ void task_uart1_rcv(void)
 	{
 
 		//st=sem_acquire(&sem_deal_complete,(uint32_t)(-1));
-		//st=getDatFromMaster(Adress_Ins_Res,&buf);
-
-		TaskDelay(1000);
-
-		st=os_true;
+		st=getDatFromMaster(Adress_Ins_Res,&pr_dat);
 		if(st==os_true)
 		{
-			msg_out("rcv ok\n");
-			for(i=0;i<8;i++)
+			len=pr_dat[3];
+			msg_out("rcv ok,buf[3]=%d len=%d\n",pr_dat[3],len);
+
+			for(i=0;i<len+8;i++)
 			{
-				buf[i]=i+timer2_get_clock();
+				msg_out("%x ",pr_dat[i]);
 			}
-			
-			pr_send=get_mem_from_pool(&pool_uart1_rcv,LEN_UART1_RCV_MEM);
+			len=len+8;
 
-			if(pr_send!=NULL)
+			#if 1
+			while(len>0)
 			{
-				pr_send[0]=8;
-				os_memcpy(pr_send+1,buf,8);
-
-				rc=put_dat_to_queue(&queue_uart1_rcv,pr_send,2000,0);
-				if(rc!=os_true)
+				pr_send=get_mem_from_pool(&pool_uart1_rcv,LEN_UART1_RCV_MEM);
+				if(pr_send!=NULL)
 				{
-					;
-				}
+					if(len>=8)
+					{
+						pr_send[0]=8;
+						os_memcpy(pr_send+1,pr_dat,8);
 
+						rc=put_dat_to_queue(&queue_uart1_rcv,pr_send,2000,0);
+						if(rc!=os_true)
+						{
+							;
+						}
+						len=len-8;
+						pr_dat+=8;
+					}
+					else
+					{
+						pr_send[0]=len;
+						os_memcpy(pr_send+1,pr_dat,len);
+
+						rc=put_dat_to_queue(&queue_uart1_rcv,pr_send,2000,0);
+						if(rc!=os_true)
+						{
+							;
+						}
+						len=0;
+					}
+				}
 			}
+			#endif
 
 			
 		}
@@ -257,7 +290,7 @@ int main(void)
 	selfos_create_task(&taskA, fun_taska, &taskA_Stk[TASKA_STK_SIZE - 1],5);  
 	selfos_create_task(&taskB, fun_taskb, &taskB_Stk[TASKB_STK_SIZE - 1],5);  
 	selfos_create_task(&taskC, fun_taskc, &taskC_Stk[TASKC_STK_SIZE - 1],5);
-	selfos_create_task(&tcb_task_uart1_rcv, task_uart1_rcv, &task_uart1_rcv_Stk[TASKC_STK_SIZE - 1],5);
+	selfos_create_task(&tcb_task_uart1_rcv, task_uart1_rcv, &task_uart1_rcv_Stk[TASKC_STK_SIZE - 1],6);
 
  	selfos_start();
 	open_all_interruct();

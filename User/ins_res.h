@@ -208,6 +208,7 @@ uint32_t loop_ins_res(void);
 uint32_t init_ins_res_port(void);
 uint32_t init_led_port(void);
 uint32_t tog_pin_port(void *pin);
+uint32_t deal_master_cmd(uint8_t *buf);
 
 
 

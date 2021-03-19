@@ -1,4 +1,7 @@
 #include"include.h"
+#include "../os/task.h"
+
+
 
 //uint8_t SendBuff[SENDBUFF_SIZE];
 u8 DMA_DR_BASE[UART1_FIFO_SIZE];
@@ -17,6 +20,12 @@ u16 uart1_recv_fifo_in = 0;
 u16 uart1_recv_fifo_out = 0;
 
 u16 uart1_recv_fifo_out_backup = 0;
+
+
+
+
+
+
 /*******************************************************************************
         串口I/O对应初始化
 *******************************************************************************/
@@ -152,15 +161,44 @@ void uart1_dma_init(void)
 /***************************************************
 串口1中断入口程序
 ***************************************************/
+
+#define deep_bufrcv		8
+uint8_t buf_uart1_rcv[deep_bufrcv+4];
+uint32_t count_uart1_rcv=0;
+uint32_t preT_u1rcv=0xffffffff,nowT_u1rcv=0;
+
 void USART1_IRQHandler(void)
 {
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
 	{
+#if 1	
 		uart1_recv_fifo[uart1_recv_fifo_in++] = USART_ReceiveData(USART1) ;
 		if(uart1_recv_fifo_in >= UART1_FIFO_SIZE)
 		{
 			uart1_recv_fifo_in = 0;
 		}
+#else
+		buf_uart1_rcv[count_uart1_rcv]=USART_ReceiveData(USART1);
+		count_uart1_rcv++;
+		if(count_uart1_rcv>=deep_bufrcv)
+		{
+
+		}
+		else
+		{
+
+		}
+
+		nowT_u1rcv=get_OS_time();
+		if(preT_u1rcv!=nowT_u1rcv)
+		{
+			/**/
+		}
+		preT_u1rcv=nowT_u1rcv;
+
+
+#endif
+		
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
 	}
 	if(USART_GetITStatus(USART1, USART_IT_TC) != RESET)

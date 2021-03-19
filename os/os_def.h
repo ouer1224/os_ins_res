@@ -8,6 +8,7 @@
 #define os_true 			1
 #define os_false			0
 #define os_null_pr			0xffffffff
+#define os_timeout			0xfffffffe
 
 #if 0
 #define os_kernel_save_line(member)			(gOS_kernel_err_code.member.line=__LINE__)
