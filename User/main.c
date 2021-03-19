@@ -22,30 +22,39 @@ u8 Sand_data[600] = {0};
 u8 REALY_DATA_1, REALY_DATA_2, REALY_DATA_3, REALY_DATA_4, REALY_DATA_5;
 
 
-#define TASKA_STK_SIZE 1024
-#define TASKB_STK_SIZE 1024
-#define TASKC_STK_SIZE 1024
-
-
-
+/*---任务-----*/
+#define TASKA_STK_SIZE 128
 static unsigned int taskA_Stk[TASKA_STK_SIZE];
-static unsigned int taskB_Stk[TASKB_STK_SIZE];
-static unsigned int taskC_Stk[TASKC_STK_SIZE];
-static unsigned int taskD_Stk[TASKB_STK_SIZE];
-
-
 volatile struct selfos_task_struct taskA;
+
+
+#define TASKB_STK_SIZE 128
+static unsigned int taskB_Stk[TASKB_STK_SIZE];
 volatile struct selfos_task_struct taskB;
+
+
+#define TASKC_STK_SIZE 128
+static unsigned int taskC_Stk[TASKC_STK_SIZE];
 volatile struct selfos_task_struct taskC;
+
+
+#define TASK_UART1_RCV_STK_SIZE 256
+static unsigned int task_uart1_rcv_Stk[TASK_UART1_RCV_STK_SIZE];
+volatile struct selfos_task_struct tcb_task_uart1_rcv;
+
+
+
 
 /*--信号量----*/
 SemCB testsem;
+SemCB sem_uart1rcv;
+SemCB sem_uart3rcv;
+SemCB sem_deal_complete;
 
 
 
 
-
-void taska(void) 
+void fun_taska(void) 
 {
 	uint32_t rc=0;
 	uint32_t count=0;
@@ -55,15 +64,16 @@ void taska(void)
 	TaskDelay(500);
 	while (1) 
 	{
-		msg_out("a is running\n");
+		
 		tog_pin_port(LED1);
 		TaskDelay(500);
+		msg_out("deal ok\n");
+		sem_release(&sem_deal_complete);
 		
-
 	}
 }
 
-void taskb(void) 
+void fun_taskb(void) 
 {
 	uint32_t rc=0;
 	uint32_t count=0;
@@ -81,7 +91,7 @@ void taskb(void)
 }
 
 
-void taskc(void) 
+void fun_taskc(void) 
 {
 	uint32_t rc=0;
 	uint32_t count=0;
@@ -101,6 +111,28 @@ void taskc(void)
 
 	}
 }
+
+void task_uart1_rcv(void)
+{
+	uint8_t *buf=NULL;
+	uint8_t st=0;	
+
+	TaskDelay(200);
+	msg_out("uart1 rcv run\n");
+	while(1)
+	{
+
+		st=sem_acquire(&sem_deal_complete,(uint32_t)(-1));
+		//st=getDatFromMaster(Adress_Ins_Res,&buf);
+		if(st==os_true)
+		{
+			msg_out("rcv ok\n");
+			sem_release(&sem_uart3rcv);
+		}
+
+	}
+}
+
 
 int main(void)
 {
@@ -122,16 +154,23 @@ int main(void)
 	TIM2_init();
 
 
+	/*--创建信号量---*/
+	sem_creat(&testsem, 1,1);
+	sem_creat(&sem_uart1rcv, 1,1);
+	sem_creat(&sem_uart3rcv, 1,1);
+	sem_creat(&sem_deal_complete,1,1);
+
+	/*--创建任务--*/
+	selfos_create_task(&taskA, fun_taska, &taskA_Stk[TASKA_STK_SIZE - 1],5);  
+	selfos_create_task(&taskB, fun_taskb, &taskB_Stk[TASKB_STK_SIZE - 1],5);  
+	selfos_create_task(&taskC, fun_taskc, &taskC_Stk[TASKC_STK_SIZE - 1],5);
+	selfos_create_task(&tcb_task_uart1_rcv, task_uart1_rcv, &task_uart1_rcv_Stk[TASKC_STK_SIZE - 1],5);
+
+
 
 	
-	selfos_create_task(&taskA, taska, &taskA_Stk[TASKA_STK_SIZE - 1],1);  
-	selfos_create_task(&taskB, taskb, &taskB_Stk[TASKB_STK_SIZE - 1],1);  
-	selfos_create_task(&taskC, taskc, &taskC_Stk[TASKC_STK_SIZE - 1],1);
 
  	selfos_start();
-
-	sem_creat(&testsem, 1,1);
-
 	open_all_interruct();
 
 	
