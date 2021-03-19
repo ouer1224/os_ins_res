@@ -47,7 +47,7 @@ void taska(void)
 	while (1) 
 	{
 		tog_pin_port(LED1);
-		TaskDelay(800);
+		TaskDelay(500);
 
 	}
 }
@@ -62,7 +62,7 @@ void taskb(void)
 	while (1) 
 	{
 		tog_pin_port(LED2);
-		TaskDelay(800);
+		TaskDelay(1000);
 	
 	}
 }
@@ -78,7 +78,7 @@ void taskc(void)
 	while (1) 
 	{
 		tog_pin_port(LED3);
-		TaskDelay(800);
+		TaskDelay(2000);
 		
 
 	}
@@ -107,9 +107,7 @@ int main(void)
 	selfos_create_task(&taskA, taska, &taskA_Stk[TASKA_STK_SIZE - 1],1);  
 	selfos_create_task(&taskB, taskb, &taskB_Stk[TASKB_STK_SIZE - 1],1);  
 	selfos_create_task(&taskC, taskc, &taskC_Stk[TASKC_STK_SIZE - 1],1);
-	
-	
-	
+
  	selfos_start();
 	open_all_interruct();
 	

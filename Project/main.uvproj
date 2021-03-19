@@ -119,7 +119,7 @@
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
           <Simulator>
-            <UseSimulator>1</UseSimulator>
+            <UseSimulator>0</UseSimulator>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -131,7 +131,7 @@
             <RestoreSysVw>1</RestoreSysVw>
           </Simulator>
           <Target>
-            <UseTarget>0</UseTarget>
+            <UseTarget>1</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -144,7 +144,7 @@
             <UsePdscDebugDescription>0</UsePdscDebugDescription>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>4</TargetSelection>
+          <TargetSelection>6</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -470,6 +470,16 @@
               <FileType>1</FileType>
               <FilePath>..\User\os_sprintf.c</FilePath>
             </File>
+            <File>
+              <FileName>SYS_WORK.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Driver\SYS_WORK.c</FilePath>
+            </File>
+            <File>
+              <FileName>hc574.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Driver\hc574.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -484,16 +494,6 @@
               <FileName>crc16.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Driver\crc16.c</FilePath>
-            </File>
-            <File>
-              <FileName>hc574.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Driver\hc574.c</FilePath>
-            </File>
-            <File>
-              <FileName>SYS_WORK.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Driver\SYS_WORK.c</FilePath>
             </File>
             <File>
               <FileName>uart1.c</FileName>
@@ -629,6 +629,46 @@
               <FileName>stm32f10x_wwdg.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Libraries\STM32F10x_StdPeriph_Driver\src\stm32f10x_wwdg.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>OS</GroupName>
+          <Files>
+            <File>
+              <FileName>link_list.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\os\link_list.c</FilePath>
+            </File>
+            <File>
+              <FileName>mem_manage.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\os\mem_manage.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_errCode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\os\os_errCode.c</FilePath>
+            </File>
+            <File>
+              <FileName>queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\os\queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>sem.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\os\sem.c</FilePath>
+            </File>
+            <File>
+              <FileName>task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\os\task.c</FilePath>
+            </File>
+            <File>
+              <FileName>content_switch.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\os\content_switch.s</FilePath>
             </File>
           </Files>
         </Group>
