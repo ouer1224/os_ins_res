@@ -154,6 +154,10 @@ void fun_taskc(void)
 	uint32_t i=0;
 	msg_out("c run\n");
 	TaskDelay(1100);
+	for(i=0;i<30;i++)
+	{
+		msg_out("%c ",i+'0');
+	}
 	while (1) 
 	{
 		rc=sem_acquire(&testsem,4000);
@@ -233,7 +237,7 @@ void task_uart1_rcv(void)
 	{
 
 		st=getDatFromMaster(Adress_Ins_Res,&pr_dat);
-		if(st==os_true)
+		if(st==FUN_OK)
 		{
 			len=pr_dat[3];
 			msg_out("rcv ok,buf[3]=%d len=%d\n",pr_dat[3],len);
@@ -246,6 +250,10 @@ void task_uart1_rcv(void)
 		
 			uput_dat_to_queue(&queue_uart1_rcv,&pool_uart1_rcv,pr_dat,len,2000);
 			
+		}
+		else
+		{
+			TaskDelay(1);
 		}
 
 	}

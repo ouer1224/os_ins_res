@@ -92,6 +92,11 @@ uint32_t os_sprintf_d(uint32_t d,uint8_t *buf)
 }
 
 
+uint32_t os_sprintf_c(uint32_t c,uint8_t *buf)
+{
+	buf[0]=c;
+	return 1;
+}
 
 
 
@@ -138,6 +143,15 @@ uint32_t os_printf(uint8_t *str , ...)
 			str++;	
 			switch(*str)
 			{
+				case 'c':
+				{
+					val_d=va_arg(ap,int);
+					//printf("arg= d =%d\n",val_d);
+					len=os_sprintf_c(val_d,pr_buf);
+					pr_buf+=len-1;
+				}
+				break;
+				
 				case 'd':
 				{
 					val_d=va_arg(ap,int);
@@ -162,15 +176,6 @@ uint32_t os_printf(uint8_t *str , ...)
 					//printf("arg= d =%f\n",val_f);
 					len=os_sprintf_f(val_f,pr_buf);
 					pr_buf+=len-1;
-				}
-				break;
-				case 'c':
-				{
-					val_d=va_arg(ap,int);
-					len=1;
-					*pr_buf=val_d;
-					pr_buf+=len-1;
-
 				}
 				break;
 				
