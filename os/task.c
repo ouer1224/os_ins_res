@@ -80,6 +80,11 @@ static unsigned int task_idle_Stk[SIZE_STACK_TASK_IDLE];
 
 extern void recode_taska_runtime(uint8_t dat);
 
+uint32_t get_OS_time(void)
+{
+
+	return get_OS_sys_count();
+}
 
 
 uint8_t OS_readyToSwitch(void)

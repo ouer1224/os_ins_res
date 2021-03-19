@@ -72,6 +72,7 @@ struct selfos_spd_info
 
 #define Sys_readyToSwitch()		do{	OS_sys_count_add();OS_readyToSwitch();}while(0)
 
+uint32_t get_OS_time(void);
 
 
 

@@ -115,15 +115,25 @@ void fun_taskb(void)
 	uint32_t rc=0;
 	uint32_t count=0;
 	uint32_t i=0;
+	uint32_t time_now=0,time_pre=0;
 	msg_out("b run\n");
 	TaskDelay(800);
+
+	time_pre=get_OS_time();
 	while (1) 
 	{
 		msg_out("b send sem\n");
 		sem_release(&testsem);
 		tog_pin_port(LED2);
 		TaskDelay(1000);
-	
+
+		time_now=get_OS_time();
+		if(time_now!=time_pre)
+		{
+			msg_out("--diff time=%d\n",time_now-time_pre);
+		}
+
+		time_pre=time_now;
 	}
 }
 
