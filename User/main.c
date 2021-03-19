@@ -43,6 +43,11 @@ static unsigned int task_uart1_rcv_Stk[TASK_UART1_RCV_STK_SIZE];
 volatile struct selfos_task_struct tcb_task_uart1_rcv;
 
 
+#define TASK_UART3_SND_STK_SIZE 128
+static unsigned int task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE];
+volatile struct selfos_task_struct tcb_task_uart3_snd;
+
+
 
 
 /*--信号量----*/
@@ -56,9 +61,16 @@ SemCB sem_deal_complete;
 /*----内存块----*/
 #define LEN_UART1_RCV_MEM	12
 #define DEEP_UART1_RCV_MEM	15
-
 static mem_pool pool_uart1_rcv;
 static uint8_t buf_mempool_uart1_rcv[LEN_UART1_RCV_MEM*DEEP_UART1_RCV_MEM];
+
+#define LEN_UART3_SND_MEM	12
+#define DEEP_UART3_SND_MEM	16
+static mem_pool pool_uart3_snd;
+static uint8_t buf_mempool_uart3_snd[LEN_UART3_SND_MEM*DEEP_UART3_SND_MEM];
+
+
+
 
 
 
@@ -67,6 +79,16 @@ static uint8_t buf_mempool_uart1_rcv[LEN_UART1_RCV_MEM*DEEP_UART1_RCV_MEM];
 #define DEEP_QUEUE_UART1_RCV	12
 static uint32_t queue_mem_uart1_rcv[DEEP_QUEUE_UART1_RCV];
 QueueCB queue_uart1_rcv;
+
+
+
+#define DEEP_QUE_UART3_SND		DEEP_UART3_SND_MEM
+static uint32_t que_mem_uart3_snd[DEEP_QUE_UART3_SND];
+QueueCB queue_uart3_snd;
+
+
+
+
 
 
 
@@ -188,7 +210,7 @@ uint32_t uput_dat_to_queue(QueueCB *pr_q,mem_pool *pr_pool,uint8_t * pr_dat,uint
 				pr_send[0]=8;
 				os_memcpy(pr_send+1,pr_dat,8);
 
-				rc=put_dat_to_queue(pr_q,pr_send,2000,0);
+				rc=put_dat_to_queue(pr_q,pr_send,delay,0);
 				if(rc!=os_true)
 				{
 					return rc;
@@ -201,7 +223,7 @@ uint32_t uput_dat_to_queue(QueueCB *pr_q,mem_pool *pr_pool,uint8_t * pr_dat,uint
 				pr_send[0]=len;
 				os_memcpy(pr_send+1,pr_dat,len);
 
-				rc=put_dat_to_queue(pr_q,pr_send,2000,0);
+				rc=put_dat_to_queue(pr_q,pr_send,delay,0);
 				if(rc!=os_true)
 				{
 					return rc;
@@ -215,10 +237,12 @@ uint32_t uput_dat_to_queue(QueueCB *pr_q,mem_pool *pr_pool,uint8_t * pr_dat,uint
 
 }
 
+uint32_t send_dat_to_uart3(uint8_t *buf,uint32_t len)
+{
 
+	return uput_dat_to_queue(&queue_uart3_snd,&pool_uart3_snd,buf,len,100);
 
-
-
+}
 
 #define Adress_Ins_Res		'1'
 
@@ -250,6 +274,8 @@ void task_uart1_rcv(void)
 		
 			uput_dat_to_queue(&queue_uart1_rcv,&pool_uart1_rcv,pr_dat,len,2000);
 			
+			send_dat_to_uart3(pr_dat,len);
+			
 		}
 		else
 		{
@@ -257,6 +283,39 @@ void task_uart1_rcv(void)
 		}
 
 	}
+}
+
+void task_uart3_snd(void)
+{
+	uint32_t st=0;
+	uint8_t *buf=NULL;
+	uint32_t i=0;
+	uint32_t len=0;
+
+	
+	task_sleep(500);
+	while(1)
+	{
+
+		st=get_dat_from_queue(&queue_uart3_snd, &buf, 1000, 0);
+		if(st==os_true)
+		{
+			len=buf[0];
+			msg_out("\n the dat u3 need snd len=%d dat=\n",len);
+			for(i=0;i<len;i++)
+			{
+				msg_out("%x ",buf[i+1]);
+			}
+			msg_out("\n");
+
+		}
+		else
+		{
+
+		}
+
+	}
+
 }
 
 
@@ -298,9 +357,18 @@ int main(void)
 		while(1);
 	}
 
+	rc=creat_mem_pool(&pool_uart3_snd,buf_mempool_uart3_snd,LEN_UART3_SND_MEM,DEEP_UART3_SND_MEM);
+	if(rc!=os_true)
+	{
+		while(1);
+	}
+
+
 
 	/*--创建队列----*/
 	queue_creat(&queue_uart1_rcv,queue_mem_uart1_rcv,DEEP_QUEUE_UART1_RCV);
+	queue_creat(&queue_uart3_snd,que_mem_uart3_snd, DEEP_QUE_UART3_SND);
+
 
 
 
@@ -308,7 +376,14 @@ int main(void)
 	selfos_create_task(&taskA, fun_taska, &taskA_Stk[TASKA_STK_SIZE - 1],5);  
 	selfos_create_task(&taskB, fun_taskb, &taskB_Stk[TASKB_STK_SIZE - 1],5);  
 	selfos_create_task(&taskC, fun_taskc, &taskC_Stk[TASKC_STK_SIZE - 1],5);
-	selfos_create_task(&tcb_task_uart1_rcv, task_uart1_rcv, &task_uart1_rcv_Stk[TASKC_STK_SIZE - 1],6);
+	selfos_create_task(&tcb_task_uart1_rcv, task_uart1_rcv,\
+						&task_uart1_rcv_Stk[TASK_UART1_RCV_STK_SIZE - 1],6);
+	selfos_create_task(&tcb_task_uart3_snd, task_uart3_snd,\
+						&task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE - 1],5);
+
+	
+
+
 
  	selfos_start();
 	open_all_interruct();

@@ -112,6 +112,7 @@ void __add_list_base_para(struct __link_list * head_list,
 
 
 void TaskDelay(uint32_t dly);
+#define task_sleep	TaskDelay
 
 
 uint8_t checkInAppOrInterr(void);
