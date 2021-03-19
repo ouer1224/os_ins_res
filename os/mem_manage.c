@@ -102,7 +102,7 @@ uint32_t creat_mem_pool(mem_pool *pr_pool,void * pr,uint32_t len,uint32_t deep)
 	{
 		return mempool_false;
 	}
-	input_critical_area();
+	//input_critical_area();
 	pr_pool->deep=deep;
 	pr_pool->len=len;
 
@@ -137,7 +137,7 @@ uint32_t creat_mem_pool(mem_pool *pr_pool,void * pr,uint32_t len,uint32_t deep)
 		
 		list_add_behind(&(pr_pool->list),spr_tail_pool);
 	}
-	exit_critical_area();
+	//exit_critical_area();
 
 	
 	return mempool_true;

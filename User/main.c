@@ -53,12 +53,32 @@ SemCB sem_deal_complete;
 
 
 
+/*----内存块----*/
+#define LEN_UART1_RCV_MEM	12
+#define DEEP_UART1_RCV_MEM	15
+
+static mem_pool pool_uart1_rcv;
+static uint8_t buf_mempool_uart1_rcv[LEN_UART1_RCV_MEM*DEEP_UART1_RCV_MEM];
+
+
+
+
+/*---队列-----*/
+#define DEEP_QUEUE_UART1_RCV	12
+static uint32_t queue_mem_uart1_rcv[DEEP_QUEUE_UART1_RCV];
+QueueCB queue_uart1_rcv;
+
+
+
 
 void fun_taska(void) 
 {
 	uint32_t rc=0;
 	uint32_t count=0;
 	uint32_t i=0;
+	uint8_t *pr_rcv=NULL;
+	uint32_t len=0;
+	uint8_t buf[12]=0;
 
 	msg_out("a run\n");
 	TaskDelay(500);
@@ -68,7 +88,24 @@ void fun_taska(void)
 		tog_pin_port(LED1);
 		TaskDelay(500);
 		msg_out("deal ok\n");
-		sem_release(&sem_deal_complete);
+
+
+		rc=get_dat_from_queue(&queue_uart1_rcv,&pr_rcv,5000,0);
+		if(rc!=NULL)
+		{
+			len=pr_rcv[0];
+			os_memcpy(buf,pr_rcv+1,len);
+			free_mem_to_pool(&pr_rcv);
+
+
+			msg_out("\n dat_rcv = ");
+			for(i=0;i<len;i++)
+			{
+				msg_out("%d ",buf[i]);	
+			}
+			msg_out("\n");
+		}
+
 		
 	}
 }
@@ -114,20 +151,48 @@ void fun_taskc(void)
 
 void task_uart1_rcv(void)
 {
-	uint8_t *buf=NULL;
-	uint8_t st=0;	
+	uint8_t *pr_send=NULL;
+	uint8_t buf[8];
+	uint32_t st=0;
+	uint32_t rc=0;
+	uint32_t i=0;
+	
 
 	TaskDelay(200);
 	msg_out("uart1 rcv run\n");
 	while(1)
 	{
 
-		st=sem_acquire(&sem_deal_complete,(uint32_t)(-1));
+		//st=sem_acquire(&sem_deal_complete,(uint32_t)(-1));
 		//st=getDatFromMaster(Adress_Ins_Res,&buf);
+
+		TaskDelay(1000);
+
+		st=os_true;
 		if(st==os_true)
 		{
 			msg_out("rcv ok\n");
-			sem_release(&sem_uart3rcv);
+			for(i=0;i<8;i++)
+			{
+				buf[i]=i+timer2_get_clock();
+			}
+			
+			pr_send=get_mem_from_pool(&pool_uart1_rcv,LEN_UART1_RCV_MEM);
+
+			if(pr_send!=NULL)
+			{
+				pr_send[0]=8;
+				os_memcpy(pr_send+1,buf,8);
+
+				rc=put_dat_to_queue(&queue_uart1_rcv,pr_send,2000,0);
+				if(rc!=os_true)
+				{
+					;
+				}
+
+			}
+
+			
 		}
 
 	}
@@ -136,6 +201,9 @@ void task_uart1_rcv(void)
 
 int main(void)
 {
+	uint32_t rc=0;
+	
+	
 	close_all_interruct();
 	/* Set the Vector Table base location at 0x3000 */
 	NVIC_SetVectorTable(NVIC_VectTab_FLASH, 0x0000);
@@ -160,15 +228,26 @@ int main(void)
 	sem_creat(&sem_uart3rcv, 1,1);
 	sem_creat(&sem_deal_complete,1,1);
 
+	/*--创建内存块----*/
+
+	
+	rc=creat_mem_pool(&pool_uart1_rcv,buf_mempool_uart1_rcv,LEN_UART1_RCV_MEM,DEEP_UART1_RCV_MEM);
+	if(rc!=os_true)
+	{
+		while(1);
+	}
+
+
+	/*--创建队列----*/
+	queue_creat(&queue_uart1_rcv,queue_mem_uart1_rcv,DEEP_QUEUE_UART1_RCV);
+
+
+
 	/*--创建任务--*/
 	selfos_create_task(&taskA, fun_taska, &taskA_Stk[TASKA_STK_SIZE - 1],5);  
 	selfos_create_task(&taskB, fun_taskb, &taskB_Stk[TASKB_STK_SIZE - 1],5);  
 	selfos_create_task(&taskC, fun_taskc, &taskC_Stk[TASKC_STK_SIZE - 1],5);
 	selfos_create_task(&tcb_task_uart1_rcv, task_uart1_rcv, &task_uart1_rcv_Stk[TASKC_STK_SIZE - 1],5);
-
-
-
-	
 
  	selfos_start();
 	open_all_interruct();
