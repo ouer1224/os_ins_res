@@ -85,8 +85,7 @@ void fun_taska(void)
 	TaskDelay(500);
 	while (1) 
 	{
-		
-		
+			
 		tog_pin_port(LED1);
 		rc=get_dat_from_queue(&queue_uart1_rcv,&pr_rcv,100,0);
 		if(rc==os_true)
@@ -170,8 +169,54 @@ void fun_taskc(void)
 }
 
 
-#define Adress_Ins_Res		'1'
+uint32_t uput_dat_to_queue(QueueCB *pr_q,mem_pool *pr_pool,uint8_t * pr_dat,uint32_t len,uint32_t delay)
+{
+	uint8_t *pr_send=NULL;
+	uint32_t rc=0;
 
+	while(len>0)
+	{
+		pr_send=get_mem_from_pool(pr_pool,LEN_UART1_RCV_MEM);
+		if(pr_send!=NULL)
+		{
+			if(len>=8)
+			{
+				pr_send[0]=8;
+				os_memcpy(pr_send+1,pr_dat,8);
+
+				rc=put_dat_to_queue(pr_q,pr_send,2000,0);
+				if(rc!=os_true)
+				{
+					return rc;
+				}
+				len=len-8;
+				pr_dat+=8;
+			}
+			else
+			{
+				pr_send[0]=len;
+				os_memcpy(pr_send+1,pr_dat,len);
+
+				rc=put_dat_to_queue(pr_q,pr_send,2000,0);
+				if(rc!=os_true)
+				{
+					return rc;
+				}
+				len=0;
+			}
+		}
+	}
+
+	return os_true;
+
+}
+
+
+
+
+
+
+#define Adress_Ins_Res		'1'
 
 void task_uart1_rcv(void)
 {
@@ -187,7 +232,6 @@ void task_uart1_rcv(void)
 	while(1)
 	{
 
-		//st=sem_acquire(&sem_deal_complete,(uint32_t)(-1));
 		st=getDatFromMaster(Adress_Ins_Res,&pr_dat);
 		if(st==os_true)
 		{
@@ -199,42 +243,8 @@ void task_uart1_rcv(void)
 				msg_out("%x ",pr_dat[i]);
 			}
 			len=len+8;
-
-			#if 1
-			while(len>0)
-			{
-				pr_send=get_mem_from_pool(&pool_uart1_rcv,LEN_UART1_RCV_MEM);
-				if(pr_send!=NULL)
-				{
-					if(len>=8)
-					{
-						pr_send[0]=8;
-						os_memcpy(pr_send+1,pr_dat,8);
-
-						rc=put_dat_to_queue(&queue_uart1_rcv,pr_send,2000,0);
-						if(rc!=os_true)
-						{
-							;
-						}
-						len=len-8;
-						pr_dat+=8;
-					}
-					else
-					{
-						pr_send[0]=len;
-						os_memcpy(pr_send+1,pr_dat,len);
-
-						rc=put_dat_to_queue(&queue_uart1_rcv,pr_send,2000,0);
-						if(rc!=os_true)
-						{
-							;
-						}
-						len=0;
-					}
-				}
-			}
-			#endif
-
+		
+			uput_dat_to_queue(&queue_uart1_rcv,&pool_uart1_rcv,pr_dat,len,2000);
 			
 		}
 
