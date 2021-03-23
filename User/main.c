@@ -373,13 +373,15 @@ int main(void)
 
 
 	/*--创建任务--*/
-	selfos_create_task(&taskA, fun_taska, &taskA_Stk[TASKA_STK_SIZE - 1],5);  
-	selfos_create_task(&taskB, fun_taskb, &taskB_Stk[TASKB_STK_SIZE - 1],5);  
-	selfos_create_task(&taskC, fun_taskc, &taskC_Stk[TASKC_STK_SIZE - 1],5);
+	/*taskA暂时为数据处理,其优先级暂定为最高*/
+	selfos_create_task(&taskA, fun_taska, &taskA_Stk[TASKA_STK_SIZE - 1],3);  
+	selfos_create_task(&taskB, fun_taskb, &taskB_Stk[TASKB_STK_SIZE - 1],10);  
+	selfos_create_task(&taskC, fun_taskc, &taskC_Stk[TASKC_STK_SIZE - 1],10);
+	/*接收任务的优先级略高一点*/
 	selfos_create_task(&tcb_task_uart1_rcv, task_uart1_rcv,\
-						&task_uart1_rcv_Stk[TASK_UART1_RCV_STK_SIZE - 1],6);
+						&task_uart1_rcv_Stk[TASK_UART1_RCV_STK_SIZE - 1],5);
 	selfos_create_task(&tcb_task_uart3_snd, task_uart3_snd,\
-						&task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE - 1],5);
+						&task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE - 1],6);
 
 	
 
