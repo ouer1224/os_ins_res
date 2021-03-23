@@ -342,32 +342,6 @@ int main(void)
 	TIM2_init();
 
 
-	/*--创建信号量---*/
-	sem_creat(&testsem, 1,1);
-	sem_creat(&sem_uart1rcv, 1,1);
-	sem_creat(&sem_uart3rcv, 1,1);
-	sem_creat(&sem_deal_complete,1,1);
-
-	/*--创建内存块----*/
-
-	
-	rc=creat_mem_pool(&pool_uart1_rcv,buf_mempool_uart1_rcv,LEN_UART1_RCV_MEM,DEEP_UART1_RCV_MEM);
-	if(rc!=os_true)
-	{
-		while(1);
-	}
-
-	rc=creat_mem_pool(&pool_uart3_snd,buf_mempool_uart3_snd,LEN_UART3_SND_MEM,DEEP_UART3_SND_MEM);
-	if(rc!=os_true)
-	{
-		while(1);
-	}
-
-
-
-	/*--创建队列----*/
-	queue_creat(&queue_uart1_rcv,queue_mem_uart1_rcv,DEEP_QUEUE_UART1_RCV);
-	queue_creat(&queue_uart3_snd,que_mem_uart3_snd, DEEP_QUE_UART3_SND);
 
 
 
@@ -383,10 +357,33 @@ int main(void)
 	selfos_create_task(&tcb_task_uart3_snd, task_uart3_snd,\
 						&task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE - 1],6);
 
-	
+
+	/*--创建信号量---*/
+	sem_creat(&testsem, 1,1);
+	sem_creat(&sem_uart1rcv, 1,1);
+	sem_creat(&sem_uart3rcv, 1,1);
+	sem_creat(&sem_deal_complete,1,1);
+
+	/*--创建内存块----*/
+	rc=creat_mem_pool(&pool_uart1_rcv,buf_mempool_uart1_rcv,LEN_UART1_RCV_MEM,DEEP_UART1_RCV_MEM);
+	if(rc!=os_true)
+	{
+		while(1);
+	}
+	rc=creat_mem_pool(&pool_uart3_snd,buf_mempool_uart3_snd,LEN_UART3_SND_MEM,DEEP_UART3_SND_MEM);
+	if(rc!=os_true)
+	{
+		while(1);
+	}
+	/*--创建队列----*/
+	queue_creat(&queue_uart1_rcv,queue_mem_uart1_rcv,DEEP_QUEUE_UART1_RCV);
+	queue_creat(&queue_uart3_snd,que_mem_uart3_snd, DEEP_QUE_UART3_SND);
 
 
 
+
+
+	/*--selfos_start函数必须最后调用,不能被修改位置--*/
  	selfos_start();
 	open_all_interruct();
 

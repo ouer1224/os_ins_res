@@ -13,7 +13,7 @@
 #include "mem_manage.h"
 #include "link_list.h"
 #include "task.h"
-
+#include "stm32f10x.h"
 
 #ifdef mempool_null_pr
 #error	mempool_null_pr shuld not been defined by user
@@ -94,6 +94,7 @@ uint32_t os_memset(void *dest,uint8_t ch,int32_t len)
 /*len申请一次内存的len,deep为可以申请的个数*/
 uint32_t creat_mem_pool(mem_pool *pr_pool,void * pr,uint32_t len,uint32_t deep)
 {
+	uint32_t st=0;
 	if(pr_pool==NULL)
 	{
 		return mempool_null_pr;
@@ -102,7 +103,16 @@ uint32_t creat_mem_pool(mem_pool *pr_pool,void * pr,uint32_t len,uint32_t deep)
 	{
 		return mempool_false;
 	}
-	//input_critical_area();
+
+	st=__get_CONTROL();
+	if(st&0x02!=0)	/*正在使用psp,处于线程模式,已经开始调度,且没有在中断中*/
+	{
+		st=1;
+	}
+	if(st==1)
+	{
+		input_critical_area();
+	}
 	pr_pool->deep=deep;
 	pr_pool->len=len;
 
@@ -137,8 +147,10 @@ uint32_t creat_mem_pool(mem_pool *pr_pool,void * pr,uint32_t len,uint32_t deep)
 		
 		list_add_behind(&(pr_pool->list),spr_tail_pool);
 	}
-	//exit_critical_area();
-
+	if(st==1)
+	{
+		exit_critical_area();
+	}
 	
 	return mempool_true;
 }

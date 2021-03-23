@@ -2,7 +2,7 @@
 #include "null.h"
 #include "stdint.h"
 #include "sem.h"
-
+#include "stm32f10x.h"
 
 
 extern void OStaskDelay(uint32_t dly);
@@ -10,6 +10,7 @@ extern void OStaskDelay(uint32_t dly);
 
 uint32_t sem_creat(SemCB * pr,uint32_t maxVal,uint32_t initVal)
 {
+	uint32_t st=0;
 	if(pr==NULL)
 	{
 		return os_null_pr;
@@ -18,11 +19,21 @@ uint32_t sem_creat(SemCB * pr,uint32_t maxVal,uint32_t initVal)
 	{
 		return os_false;
 	}
-
-	//input_critical_area();
+	st=__get_CONTROL();
+	if(st&0x02!=0)	/*正在使用psp,处于线程模式,已经开始调度,且没有在中断中*/
+	{
+		st=1;
+	}
+	if(st==1)
+	{
+		input_critical_area();
+	}
 	pr->maxVal=maxVal;
 	pr->curVal=initVal;
-	//exit_critical_area();
+	if(st==1)
+	{
+		exit_critical_area();
+	}
 
 	return os_true;
 }
