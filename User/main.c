@@ -133,17 +133,18 @@ void fun_taskb(void)
 		}
 		time_pre = time_now;
 #if 1
-		if (sem_acquire(&sem_uart1rcv, 2000) == os_true)
+		if (sem_acquire(&sem_uart1rcv, 2000) == os_true)/*2ms发送一次串口数据,测试临界区的故障*/
 		{
 			msg_out("get uart1rcv sem\n");	
+
 		}
 		else
 		{
-			msg_out("No uart1rcv sem\n");		
+			msg_out("No uart1rcv sem\n");	
 		}
-		
-#endif
 		tog_pin_port(LED2);
+#endif
+		
 	}
 }
 

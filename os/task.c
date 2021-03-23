@@ -836,6 +836,48 @@ uint8_t checkInAppOrInterr(void)
 }
 
 static uint32_t s_criticalNest=0;
+#if 1
+void __input_critical_area(void)
+{
+	static uint8_t con=1;
+
+	close_all_interruct();
+	s_criticalNest++;
+	if(s_criticalNest!=1)
+	{
+		while(con);
+	}
+
+	if((checkInAppOrInterr()==1)||(s_OSHaveNoStart))
+	{ 
+		
+	}
+	else
+	{
+		while(con);
+	} 
+
+}
+void __exit_critical_area(void)
+{
+	static uint8_t con=1;
+	s_criticalNest--;
+	if(s_criticalNest!=0)
+	{
+		while(con);
+	}
+
+	if((checkInAppOrInterr()==1)||(s_OSHaveNoStart))
+	{ 
+		open_all_interruct();
+	}
+	else
+	{
+		while(con);
+	} 
+}
+
+#else
 void __input_critical_area(void)
 {
 	static uint8_t con=1;
@@ -874,7 +916,7 @@ void __exit_critical_area(void)
 		while(con);
 	} 
 }
-
+#endif
 
 
 
