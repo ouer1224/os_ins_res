@@ -94,11 +94,11 @@ uint8_t OS_readyToSwitch(void)
 	return 1;
 }
 
-void OS_setCurInfoSlpTask(uint32_t dly)
+void OS_setCurInfoSlpTask(uint32_t dly,uint32_t nowTime)
 {
 
 	gp_selfos_cur_task->state=OS_SLEEP;
-	gp_selfos_cur_task->wake_time=get_OS_sys_count()+dly;	//需要判断计数溢出的问题
+	gp_selfos_cur_task->wake_time=nowTime+dly;	//需要判断计数溢出的问题
 
 
 	if(gp_selfos_cur_task->wake_time<sInfo_slp_task.recent_wake)
@@ -187,7 +187,7 @@ void OStaskDelay(uint32_t dly)
 	}
 
 	input_critical_area();
-	OS_setCurInfoSlpTask(dly);
+	OS_setCurInfoSlpTask(dly,get_OS_sys_count());
 	exit_critical_area();
 	
 	OS_readyToSwitch();
@@ -198,6 +198,41 @@ void OStaskDelay(uint32_t dly)
 void TaskDelay(uint32_t dly)
 {
 	OStaskDelay(dly);
+}
+
+
+/***********************************************
+ *fun     :在需要进行严格的周期运行时间时,需要先调用本函数,再使用TaskDelayPeriodic.只需要运行一次.
+ *name    :
+ *var     :
+ *return  :
+ ************************************************/
+void GetStartDelayTime(uint32_t *start)
+{
+	 *start=get_OS_sys_count();
+}
+
+/***********************************************
+ *fun     :固定delay函数,在使用本函数之前,需要先调用GetStartDelayTime一次.
+			本意是每次以start为起始点,延时dly时间.延时结束后,再更新start的时间
+ *name    :
+ *var     :
+ *return  :
+ ************************************************/
+void TaskDelayPeriodic(uint32_t dly ,uint32_t *start)
+{
+	if(dly<=0)
+	{
+		return;
+	}
+
+	input_critical_area();
+	OS_setCurInfoSlpTask(dly,*start);
+	exit_critical_area();
+	
+	OS_readyToSwitch();
+	while(gp_selfos_cur_task->state==OS_SLEEP);
+	*start=get_OS_sys_count();
 }
 
 

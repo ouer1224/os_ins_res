@@ -91,7 +91,6 @@ void selfos_distroy_task(void);
 
 uint8_t OS_readyToSwitch(void);
 
-void OS_setCurInfoSlpTask(uint32_t dly);
 void OS_setCurInfoSpdTask(uint32_t source,uint32_t dly);
 
 void OS_relSpdTask(uint32_t source);
@@ -112,6 +111,9 @@ void __add_list_base_para(struct __link_list * head_list,
 
 
 void TaskDelay(uint32_t dly);
+void GetStartDelayTime(uint32_t *start);
+void TaskDelayPeriodic(uint32_t dly ,uint32_t *start);
+
 #define task_sleep	TaskDelay
 
 

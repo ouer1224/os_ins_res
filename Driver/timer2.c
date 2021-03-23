@@ -77,6 +77,7 @@ void start_tim2(u8 on)
 *******************************************************************************/
 
 extern SemCB sem_uart1rcv;
+uint32_t g_timer=0;
 void TIM2_IRQHandler(void)
 {
 	static uint32_t i=0;
@@ -92,6 +93,7 @@ void TIM2_IRQHandler(void)
 		timer2_shake++;
 #if 1
 		i++;
+		g_timer++;
 		if(i%500==0)
 		{
 			tog_pin_port(LED4);

@@ -132,43 +132,56 @@ void fun_taskb(void)
 			//msg_out("--diff time=%d\n",time_now-time_pre);
 		}
 		time_pre = time_now;
-#if 1
+
 		if (sem_acquire(&sem_uart1rcv, 2000) == os_true)/*2ms发送一次串口数据,测试临界区的故障*/
 		{
-			msg_out("get uart1rcv sem\n");	
+			//msg_out("get uart1rcv sem\n");	
 
 		}
 		else
 		{
-			msg_out("No uart1rcv sem\n");	
+			//msg_out("No uart1rcv sem\n");	
 		}
 		tog_pin_port(LED2);
-#endif
+
 		
 	}
 }
+
 
 void fun_taskc(void)
 {
 	uint32_t rc = 0;
 	uint32_t count = 0;
 	uint32_t i = 0;
+	uint32_t time_start=0;
 	msg_out("c run\n");
 	TaskDelay(1100);
 	for (i = 0; i < 30; i++)
 	{
 		msg_out("%c ", i + '0');
 	}
+
+
+	GetStartDelayTime(&time_start);
 	while (1)
 	{
+
+#if 0
 		rc = sem_acquire(&testsem, 4000);
 		if (rc == os_true)
 		{
-			//msg_out("c got sem\n");
-			
+	
 		}
 		tog_pin_port(LED3);
 		//TaskDelay(2000);
+#else
+		i=0xfffff;
+		while(i--);
+		TaskDelayPeriodic(1000,&time_start);
+#endif
+
+
 	}
 }
 
