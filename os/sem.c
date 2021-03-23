@@ -107,6 +107,7 @@ uint32_t sem_acquire(SemCB *pr,uint32_t delay)
 		if(delay>0)
 		{
 			OS_readyToSwitch();
+			//todo:从此位置开始,就应该进入临界区
 			while(gp_selfos_cur_task->state==OS_SUSPEND);
 			
 			if(gp_selfos_cur_task->spd_source==os_spd_timeout)
@@ -167,10 +168,56 @@ void sem_release(SemCB *pr)
 }
 
 
+/***********************************************
+ *fun     :	在中断中可以使用的获取信号量函数,本函数中不能加入超时处理
+ *name    :
+ *var     :
+ *return  :os_true:表示获取到信号量,os_fault表示没有获取到,os_null_pr表示err
+ ************************************************/
+uint32_t isem_acquire(SemCB *pr)
+{
+	uint32_t rc=0;
+	
+	if(pr==NULL)
+	{
+		return os_null_pr;
+	}
+	rc=__sem_acquire(pr);
 
+	return rc;
+}
 
+/************************************************ 
+ *fun     :在中断中释放信号量
+ *name    :
+ *var     :
+ *return  :
+ ************************************************/
 
+void isem_release(SemCB *pr)
+{
 
+	if(pr==NULL)
+	{
+		return ;
+	}
+	if(pr->curVal==0)
+	{
+
+	}
+	if(pr->curVal<pr->maxVal)
+	{
+		pr->curVal++;
+	}
+	else
+	{
+		;
+	}
+	/*查找在释放该信号量后,是否能让某个任务运行,如果是,则将该任务放入到run态,这个任务的运行时间具体要根据run态的任务优先级情况*/
+	OS_relSpdTask((uint32_t)pr);
+
+	return;
+}
 
 
 

@@ -1,6 +1,7 @@
 #include"include.h"
 
 #include "../os/task.h"
+#include "../os/sem.h"
 #include "ins_res.h"
 
 static u16 timer2_ms = TIMER2_DEFAULT_MS; //记忆定时器周期
@@ -75,6 +76,7 @@ void start_tim2(u8 on)
 * Return         : None
 *******************************************************************************/
 
+extern SemCB sem_uart1rcv;
 void TIM2_IRQHandler(void)
 {
 	static uint32_t i=0;
@@ -90,10 +92,10 @@ void TIM2_IRQHandler(void)
 		timer2_shake++;
 #if 1
 		i++;
-		if(((i/250)%2)==0)
+		if(i%250==0)
 		{
 			tog_pin_port(LED4);
-			
+			isem_release(&sem_uart1rcv);
 		}
 		Sys_readyToSwitch();
 	
