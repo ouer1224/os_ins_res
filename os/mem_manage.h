@@ -27,8 +27,8 @@ uint32_t os_memset(void *dest,uint8_t ch,int32_t len);
 uint32_t free_mem_to_pool(void **pr_free);
 void * get_mem_from_pool(mem_pool *pr_pool,uint32_t len);
 uint32_t creat_mem_pool(mem_pool *pr_pool,void * pr,uint32_t len,uint32_t deep);
-
-
+void * iget_mem_from_pool(mem_pool *pr_pool,uint32_t len);
+uint32_t ifree_mem_to_pool(void **pr_free);
 
 
 

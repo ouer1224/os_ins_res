@@ -295,3 +295,95 @@ uint32_t get_dat_from_queue(QueueCB *pr_q,void ** pr_dat,uint32_t delay,uint32_t
 	return rc;
 }
 
+
+
+
+/***********************************************
+ *fun     :在中断中使用的队列发送函数
+ *name    :
+ *var     :
+ *return  :
+ ************************************************/
+uint32_t iput_dat_to_queue(QueueCB *pr_q,void * pr_dat,uint32_t pos)
+{
+	uint32_t rc=os_false;
+	uint8_t need_rel=0;
+	
+	if((pr_q==NULL)||(pr_dat==NULL))
+	{
+		return queue_null_pr;
+	}
+
+	if(IfQueueFull(pr_q)==1)
+	{
+		rc=os_false;		
+	}
+	else
+	{
+		rc=os_true;
+		if(IfQueueEmpty(pr_q)==1)
+		{
+			need_rel=1;
+		}
+	}
+
+	if(rc==os_true)
+	{
+		rc=__inser_dat_to_queue(pr_q,pr_dat,pos);
+		
+		/*如果有其他任务可能在等待队列,并且队列写入成功了,则查询是否有任务在等待当前队列*/
+		if((rc==os_true)&&(need_rel==1))
+		{
+			OS_relSpdTask(((uint32_t)pr_q)|__queue_empty__);
+		}
+
+	}
+
+
+	return rc;
+}
+
+/***********************************************
+ *fun     :在中断中使用的队列接收函数
+ *name    :
+ *var     :
+ *return  :
+ ************************************************/
+uint32_t iget_dat_from_queue(QueueCB *pr_q,void ** pr_dat,uint32_t pos)
+{
+	uint32_t rc=os_false;
+	uint8_t need_rel=0;
+
+	if((pr_q==NULL)||(pr_dat==NULL))
+	{
+		return queue_null_pr;
+	}
+	
+
+	if(IfQueueEmpty(pr_q)==1)
+	{
+		rc=os_false;		
+	}
+	else
+	{
+		rc=os_true;
+		if(IfQueueFull(pr_q)==1)
+		{
+			need_rel=1;
+		}
+	}	
+
+	if(rc==os_true)
+	{
+		rc=__acquire_dat_from_queue(pr_q,pr_dat,pos);
+		if((rc==os_true)&&(need_rel==1))
+		{
+			OS_relSpdTask(((uint32_t)pr_q)|__queue_full__);	
+		}
+		
+	}
+
+
+	return rc;
+}
+

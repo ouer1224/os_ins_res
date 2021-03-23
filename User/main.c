@@ -48,7 +48,7 @@ SemCB sem_deal_complete;
 
 /*----内存块----*/
 #define LEN_UART1_RCV_MEM 12
-#define DEEP_UART1_RCV_MEM 15
+#define DEEP_UART1_RCV_MEM 16
 static mem_pool pool_uart1_rcv;
 static uint8_t buf_mempool_uart1_rcv[LEN_UART1_RCV_MEM * DEEP_UART1_RCV_MEM];
 
@@ -57,14 +57,30 @@ static uint8_t buf_mempool_uart1_rcv[LEN_UART1_RCV_MEM * DEEP_UART1_RCV_MEM];
 static mem_pool pool_uart3_snd;
 static uint8_t buf_mempool_uart3_snd[LEN_UART3_SND_MEM * DEEP_UART3_SND_MEM];
 
+
+#define LEN_TIMER2_MEM 12
+#define DEEP_TIMER2_MEM 16
+mem_pool pool_timer2;
+static uint8_t buf_mempool_timer2[LEN_TIMER2_MEM*DEEP_TIMER2_MEM];
+
+
+
 /*---队列-----*/
-#define DEEP_QUEUE_UART1_RCV 12
+#define DEEP_QUEUE_UART1_RCV DEEP_UART1_RCV_MEM
 static uint32_t queue_mem_uart1_rcv[DEEP_QUEUE_UART1_RCV];
 QueueCB queue_uart1_rcv;
 
 #define DEEP_QUE_UART3_SND DEEP_UART3_SND_MEM
 static uint32_t que_mem_uart3_snd[DEEP_QUE_UART3_SND];
 QueueCB queue_uart3_snd;
+
+#define DEEP_QUE_TIMER2		DEEP_TIMER2_MEM
+static uint32_t que_mem_timer2[DEEP_QUE_TIMER2];
+QueueCB queue_timer2;
+
+
+
+
 
 void fun_taska(void)
 {
@@ -155,6 +171,9 @@ void fun_taskc(void)
 	uint32_t count = 0;
 	uint32_t i = 0;
 	uint32_t time_start=0;
+	uint8_t *pr_rcv=NULL;
+
+
 	msg_out("c run\n");
 	TaskDelay(1100);
 	for (i = 0; i < 30; i++)
@@ -167,14 +186,19 @@ void fun_taskc(void)
 	while (1)
 	{
 
-#if 0
-		rc = sem_acquire(&testsem, 4000);
-		if (rc == os_true)
+#if 1
+		rc=get_dat_from_queue(&queue_timer2,&pr_rcv,2000,0);
+		if(rc==os_true)
 		{
-	
+			msg_out("ilen=%d\n",pr_rcv[0]);
+			for(i=0;i<pr_rcv[0];i++)
+			{
+				msg_out("%d ",pr_rcv[i+1]);
+			}
+			msg_out("\n");
 		}
+
 		tog_pin_port(LED3);
-		//TaskDelay(2000);
 #else
 		i=0xfffff;
 		while(i--);
@@ -347,9 +371,17 @@ int main(void)
 	{
 		while(1);
 	}
+	rc=creat_mem_pool(&pool_timer2,buf_mempool_timer2,LEN_TIMER2_MEM,DEEP_TIMER2_MEM);
+	if(rc != os_true)
+	{
+		while(1);
+	}
+
+
 	/*--创建队列----*/
 	queue_creat(&queue_uart1_rcv, queue_mem_uart1_rcv, DEEP_QUEUE_UART1_RCV);
 	queue_creat(&queue_uart3_snd, que_mem_uart3_snd, DEEP_QUE_UART3_SND);
+	queue_creat(&queue_timer2,que_mem_timer2,DEEP_QUE_TIMER2);
 
 	/*--selfos_start函数必须最后调用,不能被修改位置--*/
 	selfos_start();

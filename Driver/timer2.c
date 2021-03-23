@@ -2,6 +2,8 @@
 
 #include "../os/task.h"
 #include "../os/sem.h"
+#include "../os/queue.h"
+#include "../os/mem_manage.h"
 #include "ins_res.h"
 
 static u16 timer2_ms = TIMER2_DEFAULT_MS; //记忆定时器周期
@@ -78,8 +80,12 @@ void start_tim2(u8 on)
 
 extern SemCB sem_uart1rcv;
 uint32_t g_timer=0;
+extern mem_pool pool_timer2;
+extern QueueCB queue_timer2;
 void TIM2_IRQHandler(void)
 {
+	uint8_t *pr_send=NULL;
+	uint8_t rc=0;
 	static uint32_t i=0;
 	TIM_Cmd(TIM2, DISABLE);
 	if(TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
@@ -98,6 +104,23 @@ void TIM2_IRQHandler(void)
 		{
 			tog_pin_port(LED4);
 			isem_release(&sem_uart1rcv);
+
+
+			pr_send=iget_mem_from_pool(&pool_timer2,16);
+			if(pr_send!=NULL)
+			{
+				pr_send[0]=2;
+				pr_send[1]=i;
+				pr_send[2]=i>>8;
+
+				iput_dat_to_queue(&queue_timer2,pr_send,0);
+			}
+			else
+			{
+
+			}
+
+
 		}		
 
 		Sys_readyToSwitch();

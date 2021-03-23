@@ -249,6 +249,112 @@ uint32_t free_mem_to_pool(void **pr_free)
 	return mempool_true;
 }
 
+
+
+
+/***********************************************
+ *fun     :在中断中使用的内存获取函数
+ *name    :
+ *var     :
+ *return  :
+ ************************************************/
+void * iget_mem_from_pool(mem_pool *pr_pool,uint32_t len)
+{
+	uint32_t i=0;
+	if(pr_pool==NULL)
+	{
+		mempool_null_pr;
+		return NULL;
+	}
+	if(len>pr_pool->len)
+	{	
+		mempool_false;
+		return NULL;
+	}
+
+	for(i=0;i<pr_pool->deep;i++)
+	{	
+		/*寻找尚未使用的内存块*/
+		if(__isnbitseted_array(pr_pool->free,i)==1)
+		{
+			//将内存地址return,并将对应的free位清0
+			__clearnbit_array(pr_pool->free,i);
+
+			exit_critical_area();
+			return (void *)((size_t)((pr_pool->pr_start))+len*i);
+			
+			break;
+		}
+	}
+	mempool_empty;
+	
+	return NULL;
+}
+
+/***********************************************
+ *fun     :在中断中使用的内存释放函数
+ *name    :
+ *var     :
+ *return  :
+ ************************************************/
+uint32_t ifree_mem_to_pool(void **pr_free)
+{
+	struct __link_list *cur=NULL;	
+	mem_pool * pr_pool=NULL;
+	void * pr=*pr_free;
+	uint32_t deep=0;
+	if(pr==NULL)
+	{
+		return mempool_null_pr;
+	}
+	if(spr_head_pool==NULL)
+	{
+		return mempool_unused;
+	}
+
+
+	cur=spr_head_pool;
+	do
+	{
+		pr_pool=container_of(cur,mem_pool,list);
+		if((pr>=pr_pool->pr_start)&&(pr<=pr_pool->pr_end))
+		{
+			break;			
+		}
+		pr_pool=NULL;
+		cur=cur->next;	//指向下一个结构体
+	}while(cur!=spr_head_pool);	//轮训完毕
+	
+	if(pr_pool==NULL)
+	{
+		exit_critical_area();
+		return mempool_false;
+	}
+
+	/*找出需要释放内存在pool中的深度*/
+	for(deep=0;deep<pr_pool->deep;deep++)
+	{	
+		if((pr>=(void*)((size_t)(pr_pool->pr_start)+deep*pr_pool->len))&&\
+			(pr<(void *)((size_t)(pr_pool->pr_start)+(deep+1)*pr_pool->len)))
+		{
+			__setnbit_array(pr_pool->free,deep);
+			*pr_free=NULL;
+			break;
+		}
+	}
+
+
+	if(*pr_free!=NULL)
+	{
+		return mempool_false;
+	}
+
+	return mempool_true;
+}
+
+
+
+
 /*不给外界使用*/
 #undef mempool_null_pr
 #undef mempool_true
