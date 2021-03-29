@@ -30,7 +30,7 @@
 #if comUartPort==3
 #define read_master_char	read_usart3_char
 #define send_master_char	USART3_SendByte
-#define send_master_dat		Uart3_SendArray
+#define send_master_dat		send_dat_to_uart3//Uart3_SendArray
 #elif comUartPort==1
 #define read_master_char	read_usart1_char
 #define send_master_char	USART1_SendByte
@@ -211,6 +211,8 @@ uint32_t init_ins_res_port(void);
 uint32_t init_led_port(void);
 uint32_t tog_pin_port(void *pin);
 uint32_t deal_master_cmd(uint8_t *buf);
+
+uint32_t send_dat_to_uart3(uint8_t *buf, uint32_t len);
 
 
 

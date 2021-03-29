@@ -163,7 +163,6 @@ void task_deal_ins_res(void)
 					msg_out("%x ", buf[i]);
 				}
 				msg_out("\n");
-
 				deal_master_cmd(buf);
 			}
 			len = 0;
@@ -235,7 +234,7 @@ void fun_taskc(void)
 	while (1)
 	{
 
-#if 0
+#if 1
 		rc=get_dat_from_queue(&queue_timer2,&pr_rcv,1000,0);
 		if(rc==os_true)
 		{
@@ -245,13 +244,13 @@ void fun_taskc(void)
 				msg_out("%d ",pr_rcv[i+1]);
 			}
 			msg_out("\n");
-			
+			free_mem_to_pool(&pr_rcv);	
 		}
-
-		
+	
 #else
 
-		TaskDelayPeriodic(200,&time_start);
+
+		TaskDelayPeriodic(100,&time_start);
 
 		send_dat_to_uart3(buf,30);
 #endif
@@ -292,7 +291,6 @@ void task_uart1_rcv(void)
 
 			uput_dat_to_queue(&queue_uart1_rcv, &pool_uart1_rcv, pr_dat, len, 2000);
 
-			send_dat_to_uart3(pr_dat, len);
 		}
 		else
 		{
@@ -312,7 +310,7 @@ void task_uart3_snd(void)
 	while (1)
 	{
 
-		st = get_dat_from_queue(&queue_uart3_snd, &buf, 10, 0);
+		st = get_dat_from_queue(&queue_uart3_snd, &buf, 1000, 0);
 		if (st == os_true)
 		{
 			len = buf[0];
@@ -327,11 +325,11 @@ void task_uart3_snd(void)
 #else
 			RS485_ONE_SEND;
 			Uart3_SendArray(buf+1,len);
+			free_mem_to_pool(&buf);
 			task_sleep(1);
 			RS485_ONE_RECEIVE;
-#endif
+#endif		
 			
-			free_mem_to_pool(&buf);
 		}
 		else
 		{
