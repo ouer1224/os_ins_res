@@ -24,15 +24,17 @@
 
 
 
-#define comUartPort		1
+#define comUartPort		3
 
 
 #if comUartPort==3
 #define read_master_char	read_usart3_char
 #define send_master_char	USART3_SendByte
+#define send_master_dat		Uart3_SendArray
 #elif comUartPort==1
 #define read_master_char	read_usart1_char
 #define send_master_char	USART1_SendByte
+#define send_master_dat 	Uart1_SendArray
 #endif
 
 

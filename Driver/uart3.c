@@ -1,5 +1,7 @@
 #include "include.h"
 #include "uart3.h"
+#include "ins_res.h"
+#include "..\os\task.h"
 u8 uart3_recv_buf[UART3_FIFO_SIZE];
 //u8 uart3_recv_dat[UART3_FIFO_SIZE];
 u8 DMA3_DR_BASE[UART3_FIFO_SIZE];
@@ -28,7 +30,8 @@ void uart3_Gpio_init(void)
     GPIO_InitStructure.GPIO_Pin = RS485_RE1 ;//选择的是那个管脚
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//选择最高的输出速度有2MHZ,10MHZ,50MHZ,
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//输出
-    GPIO_Init(RS485_PORT1, &GPIO_InitStructure); //按照上面的参数初始化一下
+    GPIO_Init(RS485_ENPORT, &GPIO_InitStructure); //按照上面的参数初始化一下
+
 
     GPIO_InitStructure.GPIO_Pin = TX3 ;//选择的是那个管脚
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//选择最高的输出速度有2MHZ,10MHZ,50MHZ,
@@ -64,9 +67,9 @@ void USART3_Init(unsigned int baud)
     USART_InitTypeDef USART_InitStructure;//用于USART参数设置的结构体
 
     USART_InitStructure.USART_BaudRate = baud;//设置波特率的值
-    USART_InitStructure.USART_WordLength = USART_WordLength_9b;	//一帧设置为八位的
+    USART_InitStructure.USART_WordLength = USART_WordLength_8b;	//一帧设置为八位的
     USART_InitStructure.USART_StopBits = USART_StopBits_1; //设置一位的停止位
-    USART_InitStructure.USART_Parity = USART_Parity_Even;	//偶校验位USART_Parity_No;//
+    USART_InitStructure.USART_Parity = USART_Parity_No;	//偶校验位USART_Parity_No;//
     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;//硬件流控制失能
     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;//使能发送和接收
 
@@ -86,7 +89,7 @@ void USART3_Init(unsigned int baud)
 *****************************************************************/
 void USART3_SendByte(unsigned char temp)
 {
-	RS485_ONE_SEND;
+	//RS485_ONE_SEND;
 // 	delay_us(5000);
     USART_SendData(USART3, temp); //设置单个数据
     while(USART_GetFlagStatus(USART3, USART_FLAG_TXE) == RESET); //等待数据发送完
@@ -161,12 +164,27 @@ void DMA1_chan2_NVIC(void)
 
 void Uart3_SendArray(u8 *pData,u16 Leng)
 {
+#if 0	
   RS485_ONE_SEND;
   DMA_Cmd(DMA1_Channel2, DISABLE);//先停止DMA;停止之后才容许配置，网上有些教程说DMA完成之后,会停下来，那是错误的。 
   DMA1_Channel2->CMAR  = (u32)pData; //重新设置源地址   传输之后，源地址已经增长了，所以要修改回来 
   DMA1_Channel2->CNDTR = Leng;   //重新设置发送数量   传输之后，DMA中的DMA_TX_LENG已经改变了   
   DMA_Cmd(DMA1_Channel2, ENABLE);  /* Enable USART3 TX DMA1 Channel */
   USART_ClearFlag(USART3, USART_FLAG_TC); /* 清发送外城标志，Transmission Complete flag */ 
+#else
+	RS485_ONE_SEND;
+
+	while(Leng>0)
+	{
+		Leng--;
+		USART3_SendByte(*pData);
+		pData++;
+	}
+	task_sleep(1);
+
+	RS485_ONE_RECEIVE;
+#endif
+  
 }
 //设置串口3 接收、发送均为DMA方式
 void USART3_DMA_init(void)
@@ -188,7 +206,7 @@ void USART3_DMA_init(void)
 void uart3_dma_init(void)
 {
 	uart3_Gpio_init();						//GPIO口对应初始化	TX RX 485R/T
-	USART3_Init(1000000);	 //  1000000
+	USART3_Init(115200);	 //  1000000
 	UART3_NVIC();						    //串口一接收中断初始化
 	DMA1_chan2_NVIC();						//DMA中断初始化
 	DMA_Config_Channel2();					//DMA初始化
@@ -220,7 +238,7 @@ void USART3_IRQHandler(void)
 	if(USART_GetITStatus(USART3, USART_IT_TC) != RESET)
 	{
 	 	USART_ClearITPendingBit(USART3, USART_IT_TC);
-		RS485_ONE_RECEIVE;
+		//RS485_ONE_RECEIVE;
 	}
 }
 

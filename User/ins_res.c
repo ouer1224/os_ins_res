@@ -10,6 +10,7 @@
 #include "timer2.h"
 
 #include "os_sprintf.h"
+#include "../os/task.h"
 
 
 #define CMD_MASTER_INIT				'I'
@@ -366,25 +367,19 @@ uint32_t send_msg_res(Msg_res_master * msg)
 
 	len=sizeof(msg->msg_head);
 	pr=(void *)&(msg->msg_head);
-	for(i=0;i<len;i++)
-	{
-		send_master_char(pr[i]);
-	}
+
+	send_master_dat(pr,len);
+
 
 	len=msg->msg_head.len;
 	pr=msg->pr;
-	for(i=0;i<len;i++)
-	{
-		send_master_char(pr[i]);
-	}
+
+	send_master_dat(pr,len);
 	
 	len=sizeof(msg->msg_tail);
 	pr=(void *)&(msg->msg_tail);
-	for(i=0;i<len;i++)
-	{
-		send_master_char(pr[i]);
-	}
 
+	send_master_dat(pr,len);
 
 	return FUN_OK;
 }
@@ -426,16 +421,11 @@ uint32_t handle_init_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	s_dat_init[7]=0;
 
 
-	for(i=0;i<8;i++)
-	{
-		send_master_char(s_dat_init[i]);
-	}
+	send_master_dat(s_dat_init,8);
 
-	for(i=0;i<len;i++)
-	{
-		send_master_char(buf[i]);
-	}
+	send_master_dat(buf,len);
 
+	
 	i=cal_checksum(buf,len);
 	i+=s_dat_init[4];
 	i+=s_dat_init[5];
@@ -447,10 +437,9 @@ uint32_t handle_init_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	s_dat_init[2]=0x0d;
 	s_dat_init[3]=0x0a;
 	
-	for(i=0;i<4;i++)
-	{
-		send_master_char(s_dat_init[i]);
-	}
+
+	send_master_dat(s_dat_init,4);
+
 	
 	return FUN_OK;
 }

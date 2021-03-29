@@ -20,9 +20,9 @@ u8 Sand_data[600] = {0};
 u8 REALY_DATA_1, REALY_DATA_2, REALY_DATA_3, REALY_DATA_4, REALY_DATA_5;
 
 /*---任务-----*/
-#define TASKA_STK_SIZE 128
-static unsigned int taskA_Stk[TASKA_STK_SIZE];
-volatile struct selfos_task_struct taskA;
+#define TASK_DEAL_INSRES_STK_SIZE 128
+static unsigned int task_deal_ins_res_Stk[TASK_DEAL_INSRES_STK_SIZE];
+volatile struct selfos_task_struct tcb_task_deal_ins_res;
 
 #define TASKB_STK_SIZE 128
 static unsigned int taskB_Stk[TASKB_STK_SIZE];
@@ -82,7 +82,7 @@ QueueCB queue_timer2;
 
 
 
-void fun_taska(void)
+void task_deal_ins_res(void)
 {
 	uint32_t rc = 0;
 	uint32_t count = 0;
@@ -196,8 +196,9 @@ void fun_taskc(void)
 				msg_out("%d ",pr_rcv[i+1]);
 			}
 			msg_out("\n");
-		}
 
+			
+		}
 		tog_pin_port(LED3);
 #else
 		i=0xfffff;
@@ -333,10 +334,12 @@ int main(void)
 	BKP_DeInit();
 	RCC_Configuration();
 	uart1_dma_init();
+
 	uart3_dma_init();
 
 	init_ins_res_port();
 	init_led_port();
+
 
 	tog_pin_port(LED1);
 	tog_pin_port(LED3);
@@ -345,7 +348,7 @@ int main(void)
 
 	/*--创建任务--*/
 	/*taskA暂时为数据处理,其优先级暂定为最高*/
-	selfos_create_task(&taskA, fun_taska, &taskA_Stk[TASKA_STK_SIZE - 1], 3);
+	selfos_create_task(&tcb_task_deal_ins_res, task_deal_ins_res, &task_deal_ins_res_Stk[TASK_DEAL_INSRES_STK_SIZE - 1], 3);
 	selfos_create_task(&taskB, fun_taskb, &taskB_Stk[TASKB_STK_SIZE - 1], 10);
 	selfos_create_task(&taskC, fun_taskc, &taskC_Stk[TASKC_STK_SIZE - 1], 10);
 	/*接收任务的优先级略高一点*/

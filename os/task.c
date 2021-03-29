@@ -12,7 +12,7 @@
 
 #if 1
 
-extern volatile struct selfos_task_struct taskA;
+extern volatile struct selfos_task_struct tcb_task_deal_ins_res;
 extern volatile struct selfos_task_struct taskB;
 extern volatile struct selfos_task_struct taskC;
 #endif
