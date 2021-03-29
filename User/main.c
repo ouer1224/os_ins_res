@@ -81,6 +81,53 @@ QueueCB queue_timer2;
 
 
 
+uint32_t uput_dat_to_queue(QueueCB *pr_q, mem_pool *pr_pool, uint8_t *pr_dat, uint32_t len, uint32_t delay)
+{
+	uint8_t *pr_send = NULL;
+	uint32_t rc = 0;
+
+	while (len > 0)
+	{
+		pr_send = get_mem_from_pool(pr_pool, LEN_UART1_RCV_MEM);
+		if (pr_send != NULL)
+		{
+			if (len >= 8)
+			{
+				pr_send[0] = 8;
+				os_memcpy(pr_send + 1, pr_dat, 8);
+
+				rc = put_dat_to_queue(pr_q, pr_send, delay, 0);
+				if (rc != os_true)
+				{
+					return rc;
+				}
+				len = len - 8;
+				pr_dat += 8;
+			}
+			else
+			{
+				pr_send[0] = len;
+				os_memcpy(pr_send + 1, pr_dat, len);
+
+				rc = put_dat_to_queue(pr_q, pr_send, delay, 0);
+				if (rc != os_true)
+				{
+					return rc;
+				}
+				len = 0;
+			}
+		}
+	}
+
+	return os_true;
+}
+
+uint32_t send_dat_to_uart3(uint8_t *buf, uint32_t len)
+{
+
+	return uput_dat_to_queue(&queue_uart3_snd, &pool_uart3_snd, buf, len, 100);
+}
+
 
 void task_deal_ins_res(void)
 {
@@ -172,6 +219,7 @@ void fun_taskc(void)
 	uint32_t i = 0;
 	uint32_t time_start=0;
 	uint8_t *pr_rcv=NULL;
+	uint8_t buf[32];
 
 
 	msg_out("c run\n");
@@ -179,6 +227,7 @@ void fun_taskc(void)
 	for (i = 0; i < 30; i++)
 	{
 		msg_out("%c ", i + '0');
+		buf[i]=i+'0';
 	}
 
 
@@ -186,8 +235,8 @@ void fun_taskc(void)
 	while (1)
 	{
 
-#if 1
-		rc=get_dat_from_queue(&queue_timer2,&pr_rcv,2000,0);
+#if 0
+		rc=get_dat_from_queue(&queue_timer2,&pr_rcv,1000,0);
 		if(rc==os_true)
 		{
 			msg_out("ilen=%d\n",pr_rcv[0]);
@@ -196,66 +245,22 @@ void fun_taskc(void)
 				msg_out("%d ",pr_rcv[i+1]);
 			}
 			msg_out("\n");
-
 			
 		}
-		tog_pin_port(LED3);
+
+		
 #else
-		i=0xfffff;
-		while(i--);
-		TaskDelayPeriodic(1000,&time_start);
+
+		TaskDelayPeriodic(200,&time_start);
+
+		send_dat_to_uart3(buf,30);
 #endif
 
+		tog_pin_port(LED3);
 
 	}
 }
 
-uint32_t uput_dat_to_queue(QueueCB *pr_q, mem_pool *pr_pool, uint8_t *pr_dat, uint32_t len, uint32_t delay)
-{
-	uint8_t *pr_send = NULL;
-	uint32_t rc = 0;
-
-	while (len > 0)
-	{
-		pr_send = get_mem_from_pool(pr_pool, LEN_UART1_RCV_MEM);
-		if (pr_send != NULL)
-		{
-			if (len >= 8)
-			{
-				pr_send[0] = 8;
-				os_memcpy(pr_send + 1, pr_dat, 8);
-
-				rc = put_dat_to_queue(pr_q, pr_send, delay, 0);
-				if (rc != os_true)
-				{
-					return rc;
-				}
-				len = len - 8;
-				pr_dat += 8;
-			}
-			else
-			{
-				pr_send[0] = len;
-				os_memcpy(pr_send + 1, pr_dat, len);
-
-				rc = put_dat_to_queue(pr_q, pr_send, delay, 0);
-				if (rc != os_true)
-				{
-					return rc;
-				}
-				len = 0;
-			}
-		}
-	}
-
-	return os_true;
-}
-
-uint32_t send_dat_to_uart3(uint8_t *buf, uint32_t len)
-{
-
-	return uput_dat_to_queue(&queue_uart3_snd, &pool_uart3_snd, buf, len, 100);
-}
 
 #define Adress_Ins_Res '1'
 
@@ -307,19 +312,31 @@ void task_uart3_snd(void)
 	while (1)
 	{
 
-		st = get_dat_from_queue(&queue_uart3_snd, &buf, 1000, 0);
+		st = get_dat_from_queue(&queue_uart3_snd, &buf, 10, 0);
 		if (st == os_true)
 		{
 			len = buf[0];
+
+#if 0			
 			msg_out("\n the dat u3 need snd len=%d dat=\n", len);
 			for (i = 0; i < len; i++)
 			{
 				msg_out("%x ", buf[i + 1]);
 			}
 			msg_out("\n");
+#else
+			RS485_ONE_SEND;
+			Uart3_SendArray(buf+1,len);
+			task_sleep(1);
+			RS485_ONE_RECEIVE;
+#endif
+			
+			free_mem_to_pool(&buf);
 		}
 		else
 		{
+			
+
 		}
 	}
 }
@@ -355,7 +372,7 @@ int main(void)
 	selfos_create_task(&tcb_task_uart1_rcv, task_uart1_rcv,
 					   &task_uart1_rcv_Stk[TASK_UART1_RCV_STK_SIZE - 1], 5);
 	selfos_create_task(&tcb_task_uart3_snd, task_uart3_snd,
-					   &task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE - 1], 6);
+					   &task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE - 1], 9);
 
 	/*--创建信号量---*/
 	sem_creat(&testsem, 1, 1);

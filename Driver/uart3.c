@@ -172,7 +172,7 @@ void Uart3_SendArray(u8 *pData,u16 Leng)
   DMA_Cmd(DMA1_Channel2, ENABLE);  /* Enable USART3 TX DMA1 Channel */
   USART_ClearFlag(USART3, USART_FLAG_TC); /* 清发送外城标志，Transmission Complete flag */ 
 #else
-	RS485_ONE_SEND;
+	//RS485_ONE_SEND;
 
 	while(Leng>0)
 	{
@@ -180,9 +180,9 @@ void Uart3_SendArray(u8 *pData,u16 Leng)
 		USART3_SendByte(*pData);
 		pData++;
 	}
-	task_sleep(1);
+	//task_sleep(1);
 
-	RS485_ONE_RECEIVE;
+	//RS485_ONE_RECEIVE;
 #endif
   
 }
