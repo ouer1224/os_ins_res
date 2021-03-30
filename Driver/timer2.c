@@ -106,7 +106,7 @@ void TIM2_IRQHandler(void)
 			isem_release(&sem_uart1rcv);
 
 
-			pr_send=iget_mem_from_pool(&pool_timer2,16);
+			pr_send=iget_mem_from_pool(&pool_timer2,8);
 			if(pr_send!=NULL)
 			{
 				pr_send[0]=2;

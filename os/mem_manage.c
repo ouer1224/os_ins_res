@@ -280,7 +280,6 @@ void * iget_mem_from_pool(mem_pool *pr_pool,uint32_t len)
 			//将内存地址return,并将对应的free位清0
 			__clearnbit_array(pr_pool->free,i);
 
-			exit_critical_area();
 			return (void *)((size_t)((pr_pool->pr_start))+len*i);
 			
 			break;
@@ -327,7 +326,6 @@ uint32_t ifree_mem_to_pool(void **pr_free)
 	
 	if(pr_pool==NULL)
 	{
-		exit_critical_area();
 		return mempool_false;
 	}
 

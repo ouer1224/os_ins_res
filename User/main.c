@@ -250,7 +250,7 @@ void fun_taskc(void)
 #else
 
 
-		TaskDelayPeriodic(100,&time_start);
+		TaskDelayPeriodic(20,&time_start);
 
 		send_dat_to_uart3(buf,30);
 #endif

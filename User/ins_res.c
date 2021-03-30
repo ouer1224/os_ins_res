@@ -577,7 +577,12 @@ uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 }
 
 
-
+/***********************************************
+*fun     :判断校验码,如果校验为0xaa55,即buf中的顺序是55aa,则默认是正确的,不再校准
+*name    :
+*var     :
+*return  :
+************************************************/
 uint32_t judge_checkSum(uint8_t *buf,uint8_t len,uint16_t checksum)
 {
 	uint32_t i=0;
@@ -587,6 +592,13 @@ uint32_t judge_checkSum(uint8_t *buf,uint8_t len,uint16_t checksum)
 		check=check+buf[i];
 	}
 	check%=0xffff;
+
+	if(checksum==0xaa55)
+	{
+		return FUN_OK;
+	}
+
+	
 	if(check!=checksum)
 	{
 		msg_out("judge=%x\n",check);
