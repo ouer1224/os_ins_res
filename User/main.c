@@ -310,7 +310,7 @@ void task_uart3_snd(void)
 	while (1)
 	{
 
-		st = get_dat_from_queue(&queue_uart3_snd, &buf, 1000, 0);
+		st = get_dat_from_queue(&queue_uart3_snd, &buf, 1, 0);
 		if (st == os_true)
 		{
 			len = buf[0];
@@ -327,13 +327,13 @@ void task_uart3_snd(void)
 			Uart3_SendArray(buf+1,len);
 			free_mem_to_pool(&buf);
 			task_sleep(1);
-			RS485_ONE_RECEIVE;
+			//RS485_ONE_RECEIVE;
 #endif		
 			
 		}
 		else
 		{
-			
+			RS485_ONE_RECEIVE;
 
 		}
 	}
