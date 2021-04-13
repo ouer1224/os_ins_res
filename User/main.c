@@ -8,7 +8,7 @@
 #include "../os/mem_manage.h"
 #include "../os/queue.h"
 #include "../os/sem.h"
-
+#include "../os/smallMem.h"
 /*---------------------------------------------------------------------------*/
 /* function: main                                                            */
 /*---------------------------------------------------------------------------*/
@@ -271,6 +271,7 @@ void task_uart1_rcv(void)
 	uint32_t rc = 0;
 	uint32_t i = 0;
 	uint32_t len = 0;
+	uint8_t *prmem=NULL;
 
 	TaskDelay(200);
 	msg_out("uart1 rcv run\n");
@@ -288,6 +289,18 @@ void task_uart1_rcv(void)
 				msg_out("%x ", pr_dat[i]);
 			}
 			len = len + 8;
+
+			prmem=os_malloc(len);
+			for(i=0;i<len;i++)
+			{
+				prmem[i]=pr_dat[i];
+			}
+			msg_out("\nsmall mem dat=\n");
+			for(i=0;i<len;i++)
+			{
+				msg_out("%x ",prmem[i]);
+			}
+			os_free(prmem);
 
 			uput_dat_to_queue(&queue_uart1_rcv, &pool_uart1_rcv, pr_dat, len, 2000);
 
@@ -339,6 +352,10 @@ void task_uart3_snd(void)
 	}
 }
 
+
+#define mem_buf_size	1024
+static uint8_t s_buf[mem_buf_size];
+
 int main(void)
 {
 	uint32_t rc = 0;
@@ -360,7 +377,13 @@ int main(void)
 	tog_pin_port(LED3);
 
 	TIM2_init();
-
+	
+	/*---初始化小内存块---*/
+	rc=init_mem(s_buf,mem_buf_size);
+	if(rc!=1)
+	{
+		while(1);
+	}
 	/*--创建任务--*/
 	/*taskA暂时为数据处理,其优先级暂定为最高*/
 	selfos_create_task(&tcb_task_deal_ins_res, task_deal_ins_res, &task_deal_ins_res_Stk[TASK_DEAL_INSRES_STK_SIZE - 1], 3);

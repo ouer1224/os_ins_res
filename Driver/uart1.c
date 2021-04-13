@@ -396,3 +396,16 @@ u8 get_packet1(void)
 	}
 	return 0;
 }
+
+void Uart1_SendArray(u8 *pData,u16 Leng)
+{
+	while(Leng>0)
+	{
+		USART1_SendByte(*pData);
+		Leng--;
+		pData++;
+	}
+
+}
+
+
