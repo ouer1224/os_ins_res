@@ -100,7 +100,7 @@ void TIM2_IRQHandler(void)
 #if 1
 		i++;
 		g_timer++;
-		if(i%2000==0)
+		if(i%500==0)
 		{
 			tog_pin_port(LED4);
 			isem_release(&sem_uart1rcv);
@@ -109,9 +109,13 @@ void TIM2_IRQHandler(void)
 			pr_send=iget_mem_from_pool(&pool_timer2,8);
 			if(pr_send!=NULL)
 			{
-				pr_send[0]=2;
+				pr_send[0]=6;
 				pr_send[1]=i;
 				pr_send[2]=i>>8;
+				pr_send[3]=g_timer>>24;
+				pr_send[4]=g_timer>>16;
+				pr_send[5]=g_timer>>8;
+				pr_send[6]=g_timer>>0;
 
 				iput_dat_to_queue(&queue_timer2,pr_send,0);
 			}

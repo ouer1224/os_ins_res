@@ -1,5 +1,7 @@
 
 
+#include "os_def.h"
+
 
 #undef assert		
 #define assert(val) while(!val)
@@ -13,15 +15,6 @@
 #define debug_out(formate,...)
 #endif
 
-
-#ifndef uint32_t
-
-typedef unsigned int uint32_t;
-typedef unsigned char uint8_t;
-typedef int int32_t;
-typedef char int8_t;
-
-#endif
 
 
 #ifndef null
@@ -197,10 +190,14 @@ fun_glo void * os_malloc(uint32_t size)
 	{
 		return NULL;
 	}
+	
+	input_critical_area();
 
 	pr=__os_malloc(size);
 	
 	pr=(void *)pradd(pr,sizeof(struct memCB));
+
+	exit_critical_area();
 
 	return pr;
 }
@@ -360,6 +357,9 @@ fun_prv uint32_t __os_free(struct memCB *prmem)
 fun_glo uint32_t os_free(void *pr)
 {
 	struct memCB *prmem=NULL;
+	uint32_t st=0;
+
+	input_critical_area();
 
 	prmem=(void*)prsub(pr,sizeof(struct memCB));
 	if(((uint32_t)prmem<(uint32_t)s_mem_start_address)||((uint32_t)prmem>=s_mem_end_address))
@@ -371,7 +371,11 @@ fun_glo uint32_t os_free(void *pr)
 		assert(0);
 	}
 
-	return __os_free(prmem);
+	st=__os_free(prmem);
+
+	exit_critical_area();
+
+	return st;
 
 }
 

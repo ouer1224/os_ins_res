@@ -195,7 +195,7 @@ void fun_taskb(void)
 		}
 		time_pre = time_now;
 
-		if (sem_acquire(&sem_uart1rcv, 2000) == os_true)/*2ms发送一次串口数据,测试临界区的故障*/
+		if (sem_acquire(&sem_uart1rcv, 1000) == os_true)/*2ms发送一次串口数据,测试临界区的故障*/
 		{
 			//msg_out("get uart1rcv sem\n");	
 
@@ -290,6 +290,7 @@ void task_uart1_rcv(void)
 			}
 			len = len + 8;
 
+			#if 0
 			prmem=os_malloc(len);
 			for(i=0;i<len;i++)
 			{
@@ -301,6 +302,7 @@ void task_uart1_rcv(void)
 				msg_out("%x ",prmem[i]);
 			}
 			os_free(prmem);
+			#endif
 
 			uput_dat_to_queue(&queue_uart1_rcv, &pool_uart1_rcv, pr_dat, len, 2000);
 
