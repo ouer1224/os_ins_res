@@ -100,7 +100,7 @@ void TIM2_IRQHandler(void)
 #if 1
 		i++;
 		g_timer++;
-		if(i%500==0)
+		if(i%100==0)
 		{
 			tog_pin_port(LED4);
 			isem_release(&sem_uart1rcv);

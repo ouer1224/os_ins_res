@@ -138,20 +138,32 @@ void task_deal_ins_res(void)
 	uint32_t len = 0;
 	uint8_t buf[48] = 0;
 	uint8_t *pr = buf;
+	uint8_t j=0;
 
 	msg_out("a run\n");
-	TaskDelay(500);
+	TaskDelay(1500);
 	while (1)
 	{
-
-		tog_pin_port(LED1);
+		j++;
+		if(j%50==0)
+		{
+			tog_pin_port(LED1);
+		}
 		rc = get_dat_from_queue(&queue_uart1_rcv, &pr_rcv, 100, 0);
 		if (rc == os_true)
 		{
 			len += pr_rcv[0];
-			os_memcpy(pr, pr_rcv + 1, pr_rcv[0]);
+			if(len<=48)
+			{
+				os_memcpy(pr, pr_rcv + 1, pr_rcv[0]);
+				pr = pr + pr_rcv[0];
+			}
+			else
+			{
+				msg_out("err: mem overflow\n");
+			}
 			free_mem_to_pool(&pr_rcv);
-			pr = pr + len;
+			
 		}
 		else
 		{
@@ -257,6 +269,7 @@ void fun_taskc(void)
 
 		tog_pin_port(LED3);
 
+
 	}
 }
 
@@ -278,6 +291,7 @@ void task_uart1_rcv(void)
 	while (1)
 	{
 
+#if 1
 		st = getDatFromMaster(Adress_Ins_Res, &pr_dat);
 		if (st == FUN_OK)
 		{
@@ -311,6 +325,23 @@ void task_uart1_rcv(void)
 		{
 			TaskDelay(1);
 		}
+#else
+		st=get_dat_from_queue(&queue_timer2,&pr_dat,1000,0);
+		if(st==os_true)
+		{
+			msg_out("ilen=%d\n",pr_dat[0]);
+			for(i=0;i<pr_dat[0];i++)
+			{
+				msg_out("%d ",pr_dat[i+1]);
+			}
+			msg_out("\n");
+			uput_dat_to_queue(&queue_uart1_rcv, &pool_uart1_rcv, pr_dat, pr_dat[0], 2000);
+			free_mem_to_pool(&pr_dat);	
+		}
+
+
+#endif
+		
 	}
 }
 

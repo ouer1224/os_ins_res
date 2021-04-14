@@ -670,6 +670,11 @@
               <FileType>2</FileType>
               <FilePath>..\os\content_switch.s</FilePath>
             </File>
+            <File>
+              <FileName>smallMem.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\os\smallMem.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
