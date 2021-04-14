@@ -5,7 +5,7 @@
 
 
 #include "stm32f10x.h"
-
+#include "uart1.h"
 
 #define FUN_OK				1
 #define FUN_NO_COMPLETE		0
@@ -24,7 +24,7 @@
 
 
 
-#define comUartPort		3
+#define comUartPort		1
 
 
 #if comUartPort==3
