@@ -160,6 +160,8 @@ void task_deal_ins_res(void)
 			}
 			else
 			{
+				len = 0;
+				pr = buf;
 				msg_out("err: mem overflow\n");
 			}
 			free_mem_to_pool(&pr_rcv);
