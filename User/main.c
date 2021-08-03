@@ -40,6 +40,13 @@ volatile struct selfos_task_struct tcb_task_uart1_rcv;
 static unsigned int task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE];
 volatile struct selfos_task_struct tcb_task_uart3_snd;
 
+
+#define TASK_RUN_STK_SIZE 128
+static unsigned int task_run_Stk[TASK_RUN_STK_SIZE];
+volatile struct selfos_task_struct tcb_task_run;
+
+
+
 /*--信号量----*/
 SemCB testsem;
 SemCB sem_uart1rcv;
@@ -252,12 +259,14 @@ void fun_taskc(void)
 		rc=get_dat_from_queue(&queue_timer2,&pr_rcv,1000,0);
 		if(rc==os_true)
 		{
+			#if 0
 			msg_out("ilen=%d\n",pr_rcv[0]);
 			for(i=0;i<pr_rcv[0];i++)
 			{
 				msg_out("%d ",pr_rcv[i+1]);
 			}
 			msg_out("\n");
+			#endif
 			free_mem_to_pool(&pr_rcv);	
 		}
 	
@@ -388,6 +397,28 @@ void task_uart3_snd(void)
 }
 
 
+void task_run(void)
+{
+	uint32_t rc=0;
+	uint32_t time_start=0;
+
+	task_sleep(500);
+	
+	GetStartDelayTime(&time_start);
+	for(;;)
+	{
+		msg_out("task running %d \n",rc);
+		rc++;
+
+		TaskDelayPeriodic(1000,&time_start);
+
+	}
+
+}
+
+
+
+
 #define mem_buf_size	1024
 static uint8_t s_buf[mem_buf_size];
 
@@ -429,6 +460,12 @@ int main(void)
 					   &task_uart1_rcv_Stk[TASK_UART1_RCV_STK_SIZE - 1], 5);
 	selfos_create_task(&tcb_task_uart3_snd, task_uart3_snd,
 					   &task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE - 1], 9);
+
+	selfos_create_task(&tcb_task_run, task_run,
+					   &task_run_Stk[TASK_RUN_STK_SIZE - 1], 11);
+
+	
+					   
 
 	/*--创建信号量---*/
 	sem_creat(&testsem, 1, 1);
