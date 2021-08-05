@@ -396,13 +396,114 @@ void task_uart3_snd(void)
 	}
 }
 
+static uint16_t s_sr1=0;
+static uint16_t s_sr2=0;
+
+static uint16_t s_st_tx=0;
+static uint16_t s_st_rx=0;
+
+static uint16_t s_dat1=0,s_dat2=0;
+
+
+#define u8 uint8_t
+
+#define ADC_REG_STAT ((u8)(0x00<<3))
+#define ADC_REG_MODE ((u8)(0x01<<3))
+#define ADC_REG_CONFIG ((u8)(0x02<<3))
+#define ADC_REG_DATA ((u8)(0x03<<3))
+#define ADC_REG_ID ((u8)(0x04<<3))
+#define ADC_REG_IO ((u8)(0x05<<3))
+#define ADC_REG_OFFSET ((u8)(0x06<<3))
+
+#define ADC_OP_READ ((u8)(0x40))
+#define ADC_OP_WRITE ((u8)(0x00))
+
+
+#define ADC_SPI_CS_CLR GPIOB->BSRR=GPIO_Pin_12
+#define ADC_SPI_CS_SET GPIOB->BRR=GPIO_Pin_12
+
 
 void task_run(void)
 {
 	uint32_t rc=0;
+	uint8_t flag=0;
+	volatile uint16_t tmp=0;
 	uint32_t time_start=0;
+	uint16_t tmpreg = 0;
+	GPIO_InitTypeDef GPIO_InitStructure; //用于设置GPIO口的基本参数
 
 	task_sleep(500);
+
+#if 0
+	SPI2->I2SCFGR = 0;
+
+	SPI2->CR1=0;
+	SPI2->CR1 |= (0x01<<2)|(0x03<<3);
+	
+	SPI2->CR2=0;
+	SPI2->CR2 |= (0x01<<2);
+
+	SPI2->CR1 |= (0x01<<6);
+#endif
+
+	RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOB, ENABLE );//PORTB时钟使能 
+	RCC_APB1PeriphClockCmd( RCC_APB1Periph_SPI2,  ENABLE );//SPI2时钟使能 
+
+
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//选择最高的输出速度有2MHZ,10MHZ,50MHZ,
+
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 ;//nss
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//
+	GPIO_Init(GPIOB, &GPIO_InitStructure); //按照上面的参数初始化一下
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;//sck
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;//
+	GPIO_Init(GPIOB, &GPIO_InitStructure);//按照上面的参数进行初始化
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;//MISO
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;//
+	GPIO_Init(GPIOB, &GPIO_InitStructure);//按照上面的参数进行初始化
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;//MOSI
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;//
+	GPIO_Init(GPIOB, &GPIO_InitStructure);//按照上面的参数进行初始化
+
+	GPIO_ResetBits(GPIOB,GPIO_Pin_12);
+	GPIO_SetBits(GPIOB,GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15); //是否有必要进行再次初始化
+	
+	
+	tmpreg = SPI2->CR1;
+	/* Clear BIDIMode, BIDIOE, RxONLY, SSM, SSI, LSBFirst, BR, MSTR, CPOL and CPHA bits */
+	tmpreg &= 0x3040;
+/*按照如下进行配置:
+	hspi1.Instance = SPI1;
+	hspi1.Init.Mode = SPI_MODE_MASTER;
+	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	hspi1.Init.DataSize = SPI_DATASIZE_16BIT;
+	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
+	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	hspi1.Init.CRCPolynomial = 10;
+	*/
+
+	tmpreg |= (uint16_t)((uint32_t)(SPI_Direction_2Lines_FullDuplex) | (SPI_Mode_Master) |
+					(SPI_DataSize_16b) | (SPI_CPOL_Low) |  
+					(SPI_NSS_Soft) | (SPI_CPHA_2Edge) |  
+					(SPI_BaudRatePrescaler_16) | (SPI_FirstBit_MSB));
+	/* Write to SPIx CR1 */
+	SPI2->CR1 = tmpreg;
+	
+	/* Activate the SPI mode (Reset I2SMOD bit in I2SCFGR register) */
+	SPI2->I2SCFGR &= ((uint16_t)0xF7FF); 
+
+	SPI2->CR1 |= (0x01<<6);
+
+
+
+
+	
 	
 	GetStartDelayTime(&time_start);
 	for(;;)
@@ -411,6 +512,24 @@ void task_run(void)
 		rc++;
 
 		TaskDelayPeriodic(1000,&time_start);
+
+		msg_out("CR1=%x\n",SPI2->CR1);
+		msg_out("SR=%x\n",SPI2->SR);
+		if(flag==1)
+		{
+			flag=0;
+			tmp = SPI2->SR;
+			SPI2->CR1 = tmpreg;
+			
+		}
+		if(rc%2==0)
+		{
+			GPIO_ResetBits(GPIOB,GPIO_Pin_12);
+		}
+		else
+		{
+			GPIO_SetBits(GPIOB,GPIO_Pin_12);
+		}
 
 	}
 
