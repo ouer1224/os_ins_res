@@ -432,6 +432,18 @@ void task_run(void)
 	uint16_t tmpreg = 0;
 	GPIO_InitTypeDef GPIO_InitStructure; //用于设置GPIO口的基本参数
 
+	uint16_t SPI_TX_BUF[1];     //CFG寄存器内容
+	uint16_t SPI_RX_BUF[1];
+
+
+	uint32_t txsize=0,rxsize=0;
+	uint8_t txallowed=1;
+
+	uint8_t adst=0;
+
+
+	
+
 	task_sleep(500);
 
 #if 0
@@ -490,7 +502,7 @@ void task_run(void)
 
 	tmpreg |= (uint16_t)((uint32_t)(SPI_Direction_2Lines_FullDuplex) | (SPI_Mode_Master) |
 					(SPI_DataSize_16b) | (SPI_CPOL_Low) |  
-					(SPI_NSS_Soft) | (SPI_CPHA_2Edge) |  
+					(SPI_NSS_Soft) | (SPI_CPHA_1Edge) |   //似乎就得是 第1个沿
 					(SPI_BaudRatePrescaler_16) | (SPI_FirstBit_MSB));
 	/* Write to SPIx CR1 */
 	SPI2->CR1 = tmpreg;
@@ -522,14 +534,47 @@ void task_run(void)
 			SPI2->CR1 = tmpreg;
 			
 		}
-		if(rc%2==0)
-		{
-			GPIO_ResetBits(GPIOB,GPIO_Pin_12);
-		}
-		else
+
+		if(adst==0)
 		{
 			GPIO_SetBits(GPIOB,GPIO_Pin_12);
+			TaskDelay(10);
+			GPIO_ResetBits(GPIOB,GPIO_Pin_12);
+			TaskDelay(10);
+			adst=1;
+			txsize=1;
+			rxsize=1;
+
+			SPI_TX_BUF[0] = 0xffff;
 		}
+
+		if(adst==1)
+		{
+
+			while((txsize>0)||(rxsize>0)) //感觉这是一个比较好的思路,可以在发送的同时监控接收.
+			{
+				if((txsize>0)&&(txallowed==1)&&((SPI2->SR & 0x02)!=0) )
+				{
+					SPI2->DR = SPI_TX_BUF[0];
+					txsize--;
+					txallowed=0;
+				}
+			
+				if( (rxsize>0)&&((SPI2->SR&0x01)!=0) )
+				{
+			
+					SPI_RX_BUF[0]  =  SPI2->DR;
+					rxsize--;
+					txallowed=1;
+				}
+			
+			}
+
+			adst=0;
+		}
+
+
+		
 
 	}
 
