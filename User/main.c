@@ -423,9 +423,21 @@ static uint16_t s_dat1=0,s_dat2=0;
 #define ADC_SPI_CS_SET GPIOB->BRR=GPIO_Pin_12
 
 
+#define IN0             (0x3c49 << 2)           // 单极性，全带宽，内部基准4.096V，禁用通道序列器，不回读CFG
+#define IN1             (0x3cc9 << 2)           
+#define IN2             (0x3d49 << 2)  
+#define IN3             (0x3dc9 << 2)  
+#define IN4             (0x3e49 << 2)  
+#define IN5             (0x3ec9 << 2)  
+#define IN6             (0x3f49 << 2)  
+#define IN7             (0x3fc9 << 2)  
+#define M               8                       // channel num 
+
+
 void task_run(void)
 {
 	uint32_t rc=0;
+	uint32_t i=0;
 	uint8_t flag=0;
 	volatile uint16_t tmp=0;
 	uint32_t time_start=0;
@@ -441,6 +453,9 @@ void task_run(void)
 
 	uint8_t adst=0;
 
+	uint8_t count=0;
+	uint16_t ad7689_cfg[M] = {IN2, IN3, IN4, IN5, IN6, IN7, IN0, IN1 };  // CFG序列，与data错开2个序列
+	uint16_t rxdata[M];
 
 	
 
@@ -524,7 +539,7 @@ void task_run(void)
 		rc++;
 
 		TaskDelayPeriodic(1000,&time_start);
-
+#if 1
 		msg_out("CR1=%x\n",SPI2->CR1);
 		msg_out("SR=%x\n",SPI2->SR);
 		if(flag==1)
@@ -534,18 +549,31 @@ void task_run(void)
 			SPI2->CR1 = tmpreg;
 			
 		}
-
+#endif
 		if(adst==0)
 		{
 			GPIO_SetBits(GPIOB,GPIO_Pin_12);
-			TaskDelay(10);
+
+			#if 1
+			for(i=0;i<10;i++)
+			{
+				//delay
+			}
+			#else
+				TaskDelay(10);
+			#endif
+
+			
 			GPIO_ResetBits(GPIOB,GPIO_Pin_12);
-			TaskDelay(10);
+
+			TaskDelay(1);
+			
 			adst=1;
 			txsize=1;
 			rxsize=1;
 
-			SPI_TX_BUF[0] = 0xffff;
+			SPI_TX_BUF[0] = ad7689_cfg[count];
+			
 		}
 
 		if(adst==1)
@@ -566,9 +594,15 @@ void task_run(void)
 					SPI_RX_BUF[0]  =  SPI2->DR;
 					rxsize--;
 					txallowed=1;
+					rxdata[count]= SPI_RX_BUF[0];
+					count=(count+1)%M;
+
 				}
 			
+			
 			}
+
+			msg_out("count=%d   rx=%x   v=%d\n",count,SPI_RX_BUF[0],(uint32_t)(SPI_RX_BUF[0]*1.0/0xffff*4096));
 
 			adst=0;
 		}
@@ -616,7 +650,7 @@ int main(void)
 	}
 	/*--创建任务--*/
 	/*taskA暂时为数据处理,其优先级暂定为最高*/
-	selfos_create_task(&tcb_task_deal_ins_res, task_deal_ins_res, &task_deal_ins_res_Stk[TASK_DEAL_INSRES_STK_SIZE - 1], 3);
+	selfos_create_task(&tcb_task_deal_ins_res, task_deal_ins_res, &task_deal_ins_res_Stk[TASK_DEAL_INSRES_STK_SIZE - 1], 4);
 	selfos_create_task(&taskB, fun_taskb, &taskB_Stk[TASKB_STK_SIZE - 1], 10);
 	selfos_create_task(&taskC, fun_taskc, &taskC_Stk[TASKC_STK_SIZE - 1], 10);
 	/*接收任务的优先级略高一点*/
@@ -626,7 +660,7 @@ int main(void)
 					   &task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE - 1], 9);
 
 	selfos_create_task(&tcb_task_run, task_run,
-					   &task_run_Stk[TASK_RUN_STK_SIZE - 1], 11);
+					   &task_run_Stk[TASK_RUN_STK_SIZE - 1], 3);
 
 	
 					   
