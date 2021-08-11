@@ -216,7 +216,7 @@ void fun_taskb(void)
 		}
 		time_pre = time_now;
 
-		if (sem_acquire(&sem_uart1rcv, 1000) == os_true)/*2ms发送一次串口数据,测试临界区的故障*/
+		if (sem_acquire(&sem_uart1rcv, 2000) == os_true)/*2ms发送一次串口数据,测试临界区的故障*/
 		{
 			//msg_out("get uart1rcv sem\n");	
 
@@ -434,6 +434,238 @@ static uint16_t s_dat1=0,s_dat2=0;
 #define M               8                       // channel num 
 
 
+#define AD5410_LATCH_HIGH() GPIOC->BSRR=GPIO_Pin_4
+#define AD5410_LATCH_LOW() GPIOC->BRR=GPIO_Pin_4
+
+void AD5410xEnableOperate(void)
+{
+	uint32_t i=0;
+	  //拉高LATCH
+	AD5410_LATCH_HIGH();
+
+	for(i=0;i<0xff;i++)
+	{
+
+	}
+
+	//拉低LATCH
+	AD5410_LATCH_LOW();
+
+}
+
+void AD5410xDisableOperate(void)
+{
+	uint32_t i=0;
+
+	//拉低LATCH
+	AD5410_LATCH_LOW();
+
+
+	for(i=0;i<0xff;i++)
+	{
+
+	}
+	//拉高LATCH
+	AD5410_LATCH_HIGH();
+
+}
+#if 0
+static __inline void spiWriteData(uint8_t *val ,uint32_t len)
+{
+
+	uint32_t count=0;
+	uint8_t txsize=0,rxsize=0;
+	uint8_t txallowed=0;
+	
+
+	AD5410xEnableOperate();
+
+	txsize=len;
+	rxsize=0;
+	txallowed=1;
+	
+	
+	
+	while((txsize>0)||(rxsize>0)) //感觉这是一个比较好的思路,可以在发送的同时监控接收.
+	{
+		if((txsize>0)&&(txallowed==1)&&((SPI1->SR & 0x02)!=0) )
+		{
+			SPI1->DR = val[len-txsize];
+			txsize--;
+		}
+	}
+	
+	while((SPI1->SR & (0x01<<7))!=0); //是否要加入,判断tx为空的标志,还是要判断busy标志.
+
+
+	AD5410xDisableOperate();
+
+
+}
+#else
+static __inline void spiWriteData(uint8_t *val ,uint32_t len)
+{
+
+	uint32_t i=0;
+	uint8_t txsize=0,rxsize=0;
+	uint8_t txallowed=0;
+	
+
+	AD5410xEnableOperate();
+
+	txsize=len;
+	rxsize=0;
+	txallowed=1;
+	
+	for(i=0;i<len;)
+	{
+		if((SPI1->SR &0x02)!=0)
+		{
+			SPI1->DR = val[i];
+			i++;
+		}
+	}
+
+	
+	while((SPI1->SR & (0x01<<7))!=0); //是否要加入,判断tx为空的标志,还是要判断busy标志.
+
+
+	AD5410xDisableOperate();
+
+
+}
+
+
+
+#endif
+
+static uint8_t AD5410xWriteReg(uint8_t RegAddr, uint16_t value)
+{
+  
+	uint8_t SendData[3]={0x00, 0x00, 0x00};
+	uint32_t i=0;
+
+	AD5410xEnableOperate();
+
+	SendData[0] = RegAddr;
+	SendData[1] = value>>8;
+	SendData[2] = value&0xff;
+
+	for(i=0;i<3;i++)
+	{
+		while((SPI1->SR & 0x02)!=0)
+		{
+			SPI1->DR = SendData[i];
+		}
+	}
+	
+	//while((SPI1->SR & 0x02)!=0); //是否要加入,判断tx为空的标志,还是要判断busy标志.
+	while((SPI2->SR & (0x01<<7))!=0);
+
+
+	AD5410xDisableOperate();
+   
+  return 0;
+}
+static uint8_t s_54_rx[3];
+static uint32_t AD5410xReadReg(uint8_t whichreg)
+{
+  
+	uint8_t SendData[3]={0x02, 0x00, 0x00};
+	uint8_t rxdata[3]={0,0,0};
+	uint32_t count=0;
+	uint8_t datrx=0,dattx=0;
+	uint8_t txsize=0,rxsize=0;
+	uint8_t txallowed=0;
+
+	
+	uint32_t i=0;
+
+	AD5410xEnableOperate();
+
+	SendData[1] = whichreg>>8;
+	SendData[2] = whichreg&0xff;
+
+	spiWriteData(SendData,3);
+
+	for(i=0;i<100;i++)
+	{
+	}
+
+
+	AD5410xEnableOperate();
+
+	SendData[0]=0;
+	SendData[1]=0;
+	SendData[1]=0;
+
+	txsize=3;
+	rxsize=3;
+	txallowed=1;
+	
+	
+	
+	while((txsize>0)||(rxsize>0)) //感觉这是一个比较好的思路,可以在发送的同时监控接收.
+	{
+		if((txsize>0)&&(txallowed==1)&&((SPI1->SR & 0x02)!=0) )
+		{
+			SPI1->DR = SendData[3-txsize];
+			txsize--;
+			txallowed=0;
+		}
+	
+		if( (rxsize>0)&&((SPI1->SR&0x01)!=0) )
+		{
+	
+			datrx  =  SPI1->DR;
+			
+			txallowed=1;
+			rxdata[3-rxsize]= datrx;
+			rxsize--;
+
+		}
+	
+	
+	}
+
+	
+	while((SPI2->SR & (0x01<<7))!=0); //是否要加入,判断tx为空的标志,还是要判断busy标志.
+
+
+	AD5410xDisableOperate();
+
+
+	s_54_rx[0]=rxdata[0];
+	s_54_rx[1]=rxdata[1];
+	s_54_rx[2]=rxdata[2];
+	
+  return (rxdata[0]<<16) | (rxdata[1]<<8) | rxdata[2];
+}
+
+
+
+static uint8_t AD5410xSoftReset()
+{
+	uint8_t SendValidData[3]={0x56, 0x00, 0x00};
+	uint32_t i=0;
+	AD5410xEnableOperate();
+	for(i=0;i<3;i++)
+	{
+		while((SPI1->SR & 0x02)!=0)
+		{
+			SPI1->DR = SendValidData[i];
+		}
+	}
+	//while((SPI2->SR & 0x02)!=0); //是否要加入,判断tx为空的标志,还是要判断busy标志.
+	while((SPI1->SR & (0x01<<7))!=0);
+	for(i=0;i<100;i++)
+	{
+	}
+	AD5410xDisableOperate();
+	return 0;
+}
+
+
 void task_run(void)
 {
 	uint32_t rc=0;
@@ -456,10 +688,15 @@ void task_run(void)
 	uint8_t count=0;
 	uint16_t ad7689_cfg[M] = {IN2, IN3, IN4, IN5, IN6, IN7, IN0, IN1 };  // CFG序列，与data错开2个序列
 	uint16_t rxdata[M];
+	uint16_t val_cont=0;
 
-	
+	uint8_t ad54_sendbuf[3];
+
+	uint32_t readdat=0;
 
 	task_sleep(500);
+
+/*---adc 的spi初始化---*/
 
 #if 0
 	SPI2->I2SCFGR = 0;
@@ -500,20 +737,6 @@ void task_run(void)
 	tmpreg = SPI2->CR1;
 	/* Clear BIDIMode, BIDIOE, RxONLY, SSM, SSI, LSBFirst, BR, MSTR, CPOL and CPHA bits */
 	tmpreg &= 0x3040;
-/*按照如下进行配置:
-	hspi1.Instance = SPI1;
-	hspi1.Init.Mode = SPI_MODE_MASTER;
-	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-	hspi1.Init.DataSize = SPI_DATASIZE_16BIT;
-	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-	hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
-	hspi1.Init.NSS = SPI_NSS_SOFT;
-	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-	hspi1.Init.CRCPolynomial = 10;
-	*/
 
 	tmpreg |= (uint16_t)((uint32_t)(SPI_Direction_2Lines_FullDuplex) | (SPI_Mode_Master) |
 					(SPI_DataSize_16b) | (SPI_CPOL_Low) |  
@@ -527,10 +750,65 @@ void task_run(void)
 
 	SPI2->CR1 |= (0x01<<6);
 
-
-
-
+#if 1
+/*---dac 的spi 的初始化*/
 	
+	RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOC, ENABLE );//PORTB时钟使能 
+	RCC_APB2PeriphClockCmd( RCC_APB2Periph_SPI1,  ENABLE );//SPI2时钟使能 
+
+
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//选择最高的输出速度有2MHZ,10MHZ,50MHZ,
+
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4 ;//nss
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//
+	GPIO_Init(GPIOA, &GPIO_InitStructure); //按照上面的参数初始化一下
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;//sck
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;//
+	GPIO_Init(GPIOA, &GPIO_InitStructure);//按照上面的参数进行初始化
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;//MISO
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;//
+	GPIO_Init(GPIOA, &GPIO_InitStructure);//按照上面的参数进行初始化
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;//MOSI
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;//
+	GPIO_Init(GPIOA, &GPIO_InitStructure);//按照上面的参数进行初始化
+
+	GPIO_ResetBits(GPIOA,GPIO_Pin_12);
+	GPIO_SetBits(GPIOA,GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15); //是否有必要进行再次初始化
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4 ;//latch
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+	GPIO_SetBits(GPIOC,GPIO_Pin_4);
+
+	tmpreg = SPI1->CR1;
+	/* Clear BIDIMode, BIDIOE, RxONLY, SSM, SSI, LSBFirst, BR, MSTR, CPOL and CPHA bits */
+	tmpreg &= 0x3040;
+
+	tmpreg |= (uint16_t)((uint32_t)(SPI_Direction_2Lines_FullDuplex) | (SPI_Mode_Master) |
+					(SPI_DataSize_8b) | (SPI_CPOL_Low) |  
+					(SPI_NSS_Soft) | (SPI_CPHA_1Edge) |   //似乎就得是 第1个沿
+					(SPI_BaudRatePrescaler_16) | (SPI_FirstBit_MSB));
+	/* Write to SPIx CR1 */
+	SPI1->CR1 = tmpreg;
+	
+	/* Activate the SPI mode (Reset I2SMOD bit in I2SCFGR register) */
+	SPI1->I2SCFGR &= ((uint16_t)0xF7FF); 
+
+	SPI1->CR1 |= (0x01<<6);
+
+
+	TaskDelay(500);
+
+	//val_cont=(0x11<<8)|(0x00);
+	///AD5410xWriteReg(0x55,val_cont);
+
+	ad54_sendbuf[0]=0x55;
+	ad54_sendbuf[1]=0x11;
+	ad54_sendbuf[2]=0x00;
+	spiWriteData(ad54_sendbuf,3);
+
+#endif	
 	
 	GetStartDelayTime(&time_start);
 	for(;;)
@@ -607,8 +885,43 @@ void task_run(void)
 			adst=0;
 		}
 
+#if 1
+		if((rc%4)==0)
+		{
+			//readdat=AD5410xReadReg(0x01);
+			//AD5410xWriteReg(0x01,0x7fff);
+			ad54_sendbuf[0]=0x01;
+			ad54_sendbuf[1]=(0xffff/4)>>8;
+			ad54_sendbuf[2]=0xffff/4;
+			spiWriteData(ad54_sendbuf,3);
+		}
+		else if((rc%4)==1)
+		{
 
-		
+			ad54_sendbuf[0]=0x01;
+			ad54_sendbuf[1]=(0xffff/4*2)>>8;
+			ad54_sendbuf[2]=0xffff/4*2;
+
+			spiWriteData(ad54_sendbuf,3);
+			//AD5410xWriteReg(0x01,0x00);
+		}
+		else if((rc%4)==2)
+		{
+			ad54_sendbuf[0]=0x01;
+			ad54_sendbuf[1]=(0xffff/4*3)>>8;
+			ad54_sendbuf[2]=0xffff/4*3;
+
+			spiWriteData(ad54_sendbuf,3);
+		}
+		else if((rc%4)==3)
+		{
+			ad54_sendbuf[0]=0x01;
+			ad54_sendbuf[1]=(0xffff/4*4)>>8;
+			ad54_sendbuf[2]=0xffff/4*4;
+
+			spiWriteData(ad54_sendbuf,3);
+		}
+#endif		
 
 	}
 
