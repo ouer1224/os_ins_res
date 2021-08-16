@@ -983,12 +983,10 @@ void task_run(void)
 				datChain[0][1] = (0xffff / 4) >> 8;
 				datChain[0][2] = 0xffff / 4;
 			}
-
-			AD5410xWriteReg(0,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]<<3));
-			AD5410xWriteReg(1,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]<<3));
-			AD5410xWriteReg(2,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]<<3));
-			AD5410xWriteReg(3,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]<<3));
-
+			for(i=0;i<8;i++)
+			{
+				AD5410xWriteReg(i,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]<<3));
+			}
 		}
 		else if ((rc % 4) == 1)
 		{
@@ -999,16 +997,10 @@ void task_run(void)
 				datChain[1][1] = (0xffff / 4 * 2) >> 8;
 				datChain[1][2] = 0xffff / 4 * 2;
 			}
-
-			AD5410xWriteReg(1,datChain[1][0],(datChain[1][1]<<8)|(datChain[1][2]<<3));
-
+			for(i=0;i<8;i++)
 			{
-				memset(datChain, 0, 24);
-				datChain[0][0] = 0x01;
-				datChain[0][1] = (0xffff / 2) >> 8;
-				datChain[0][2] = 0xffff / 2;
+				AD5410xWriteReg(i,datChain[1][0],(datChain[1][1]<<8)|(datChain[1][2]<<3));
 			}
-			AD5410xWriteReg(0,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]<<3));
 		}
 		else if ((rc % 4) == 2)
 		{
@@ -1019,7 +1011,10 @@ void task_run(void)
 				datChain[2][1] = (0xffff / 4 * 3) >> 8;
 				datChain[2][2] = 0xffff / 4 * 3;
 			}
-			AD5410xWriteReg(2,datChain[2][0],(datChain[2][1]<<8)|(datChain[2][2]<<3));
+			for(i=0;i<8;i++)
+			{
+				AD5410xWriteReg(i,datChain[2][0],(datChain[2][1]<<8)|(datChain[2][2]<<3));
+			}			
 		}
 		else if ((rc % 4) == 3)
 		{
@@ -1030,8 +1025,10 @@ void task_run(void)
 				datChain[3][1] = (0xffff / 4 * 4) >> 8;
 				datChain[3][2] = 0xffff / 4 * 4;
 			}
-
-			AD5410xWriteReg(3,datChain[3][0],(datChain[3][1]<<8)|(datChain[3][2]<<3));
+			for(i=0;i<8;i++)
+			{
+				AD5410xWriteReg(i,datChain[3][0],(datChain[3][1]<<8)|(datChain[3][2]<<3));
+			}
 		}
 #endif
 	}
