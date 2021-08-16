@@ -846,6 +846,24 @@ void task_run(void)
 	ad54_sendbuf[2]=0x00;
 	spiWriteData(ad54_sendbuf,3);
 #else
+
+
+	for (i = 0; i < numofad542; i++)
+	{
+
+		memset(datChain, 0, 24);
+
+		datChain[i][0] = 0x56;
+		datChain[i][1] = 0;
+		datChain[i][2] = 1;
+		//spiChainWrite((void *)datChain, numofad542, sizeofad542dat);
+
+		AD5410xWriteReg(i,0x55,(datChain[i][1]<<8)|(datChain[i][2]));
+	}
+
+TaskDelay(1);
+
+
 	//ÅäÖÃÎª ¾Õ»¨Á´
 	for (i = 0; i < numofad542; i++)
 	{
@@ -857,7 +875,7 @@ void task_run(void)
 		datChain[i][2] = 0x00 | (0x01 << 3);
 		//spiChainWrite((void *)datChain, numofad542, sizeofad542dat);
 
-		AD5410xWriteReg(i,0x55,(0x11<<8)|(0x01<<3));
+		AD5410xWriteReg(i,0x55,(datChain[i][1]<<8)|(datChain[i][2]));
 	}
 
 	msg_out("cfg chainline\n");
@@ -985,7 +1003,7 @@ void task_run(void)
 			}
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]<<3));
+				AD5410xWriteReg(i,datChain[0][0],0);//(datChain[0][1]<<8)|(datChain[0][2]));
 			}
 		}
 		else if ((rc % 4) == 1)
@@ -999,7 +1017,7 @@ void task_run(void)
 			}
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[1][0],(datChain[1][1]<<8)|(datChain[1][2]<<3));
+				AD5410xWriteReg(i,datChain[1][0],0);//(datChain[1][1]<<8)|(datChain[1][2]));
 			}
 		}
 		else if ((rc % 4) == 2)
@@ -1013,7 +1031,7 @@ void task_run(void)
 			}
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[2][0],(datChain[2][1]<<8)|(datChain[2][2]<<3));
+				AD5410xWriteReg(i,datChain[2][0],0);//(datChain[2][1]<<8)|(datChain[2][2]));
 			}			
 		}
 		else if ((rc % 4) == 3)
@@ -1022,12 +1040,12 @@ void task_run(void)
 			{
 				memset(datChain, 0, 24);
 				datChain[3][0] = 0x01;
-				datChain[3][1] = (0xffff / 4 * 4) >> 8;
-				datChain[3][2] = 0xffff / 4 * 4;
+				datChain[3][1] = (0xffff / 4 * 0) >> 8;
+				datChain[3][2] = 0xffff / 4 * 0;
 			}
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[3][0],(datChain[3][1]<<8)|(datChain[3][2]<<3));
+				AD5410xWriteReg(i,datChain[3][0],0);//(datChain[3][1]<<8)|(datChain[3][2]));
 			}
 		}
 #endif
