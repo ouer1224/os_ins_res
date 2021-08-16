@@ -804,8 +804,8 @@ void task_run(void)
 	///AD5410xWriteReg(0x55,val_cont);
 
 	ad54_sendbuf[0]=0x55;
-	ad54_sendbuf[1]=0x11;
-	ad54_sendbuf[2]=0x00;
+	ad54_sendbuf[1]=0x31;
+	ad54_sendbuf[2]=0x01;
 	spiWriteData(ad54_sendbuf,3);
 
 #endif	
