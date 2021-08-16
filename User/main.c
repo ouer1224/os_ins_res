@@ -872,7 +872,7 @@ TaskDelay(1);
 
 		datChain[i][0] = 0x55;
 		datChain[i][1] = 0x31;
-		datChain[i][2] = 0x00 | (0x01 << 3);
+		datChain[i][2] = 0x01 | (0x01 << 3);
 		//spiChainWrite((void *)datChain, numofad542, sizeofad542dat);
 
 		AD5410xWriteReg(i,0x55,(datChain[i][1]<<8)|(datChain[i][2]));
@@ -1003,7 +1003,7 @@ TaskDelay(1);
 			}
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[0][0],0);//(datChain[0][1]<<8)|(datChain[0][2]));
+				AD5410xWriteReg(i,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]));
 			}
 		}
 		else if ((rc % 4) == 1)
@@ -1017,7 +1017,7 @@ TaskDelay(1);
 			}
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[1][0],0);//(datChain[1][1]<<8)|(datChain[1][2]));
+				AD5410xWriteReg(i,datChain[1][0],(datChain[1][1]<<8)|(datChain[1][2]));
 			}
 		}
 		else if ((rc % 4) == 2)
@@ -1031,7 +1031,7 @@ TaskDelay(1);
 			}
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[2][0],0);//(datChain[2][1]<<8)|(datChain[2][2]));
+				AD5410xWriteReg(i,datChain[2][0],(datChain[2][1]<<8)|(datChain[2][2]));
 			}			
 		}
 		else if ((rc % 4) == 3)
@@ -1045,7 +1045,7 @@ TaskDelay(1);
 			}
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[3][0],0);//(datChain[3][1]<<8)|(datChain[3][2]));
+				AD5410xWriteReg(i,datChain[3][0],(datChain[3][1]<<8)|(datChain[3][2]));
 			}
 		}
 #endif
