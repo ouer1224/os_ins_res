@@ -9,6 +9,7 @@
 #include "../os/queue.h"
 #include "../os/sem.h"
 #include "../os/smallMem.h"
+#include "ad7699.h"
 /*---------------------------------------------------------------------------*/
 /* function: main                                                            */
 /*---------------------------------------------------------------------------*/
@@ -698,57 +699,8 @@ void task_run(void)
 
 /*---adc 的spi初始化---*/
 
-#if 0
-	SPI2->I2SCFGR = 0;
+	osassert(init_ad7699());
 
-	SPI2->CR1=0;
-	SPI2->CR1 |= (0x01<<2)|(0x03<<3);
-	
-	SPI2->CR2=0;
-	SPI2->CR2 |= (0x01<<2);
-
-	SPI2->CR1 |= (0x01<<6);
-#endif
-
-	RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOB, ENABLE );//PORTB时钟使能 
-	RCC_APB1PeriphClockCmd( RCC_APB1Periph_SPI2,  ENABLE );//SPI2时钟使能 
-
-
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;//选择最高的输出速度有2MHZ,10MHZ,50MHZ,
-
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 ;//nss
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//
-	GPIO_Init(GPIOB, &GPIO_InitStructure); //按照上面的参数初始化一下
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;//sck
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;//
-	GPIO_Init(GPIOB, &GPIO_InitStructure);//按照上面的参数进行初始化
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;//MISO
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;//
-	GPIO_Init(GPIOB, &GPIO_InitStructure);//按照上面的参数进行初始化
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;//MOSI
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;//
-	GPIO_Init(GPIOB, &GPIO_InitStructure);//按照上面的参数进行初始化
-
-	GPIO_ResetBits(GPIOB,GPIO_Pin_12);
-	GPIO_SetBits(GPIOB,GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15); //是否有必要进行再次初始化
-	
-	
-	tmpreg = SPI2->CR1;
-	/* Clear BIDIMode, BIDIOE, RxONLY, SSM, SSI, LSBFirst, BR, MSTR, CPOL and CPHA bits */
-	tmpreg &= 0x3040;
-
-	tmpreg |= (uint16_t)((uint32_t)(SPI_Direction_2Lines_FullDuplex) | (SPI_Mode_Master) |
-					(SPI_DataSize_16b) | (SPI_CPOL_Low) |  
-					(SPI_NSS_Soft) | (SPI_CPHA_1Edge) |   //似乎就得是 第1个沿
-					(SPI_BaudRatePrescaler_16) | (SPI_FirstBit_MSB));
-	/* Write to SPIx CR1 */
-	SPI2->CR1 = tmpreg;
-	
-	/* Activate the SPI mode (Reset I2SMOD bit in I2SCFGR register) */
-	SPI2->I2SCFGR &= ((uint16_t)0xF7FF); 
-
-	SPI2->CR1 |= (0x01<<6);
 
 #if 1
 /*---dac 的spi 的初始化*/
@@ -830,55 +782,14 @@ void task_run(void)
 #endif
 		if(adst==0)
 		{
-			GPIO_SetBits(GPIOB,GPIO_Pin_12);
-
-			#if 1
-			for(i=0;i<10;i++)
-			{
-				//delay
-			}
-			#else
-				TaskDelay(10);
-			#endif
-
-			
-			GPIO_ResetBits(GPIOB,GPIO_Pin_12);
-
-			TaskDelay(1);
-			
 			adst=1;
-			txsize=1;
-			rxsize=1;
-
-			SPI_TX_BUF[0] = ad7689_cfg[count];
-			
+			start_conver_ad7699();
 		}
 
-		if(adst==1)
+		if (adst == 1)
 		{
-
-			while((txsize>0)||(rxsize>0)) //感觉这是一个比较好的思路,可以在发送的同时监控接收.
-			{
-				if((txsize>0)&&(txallowed==1)&&((SPI2->SR & 0x02)!=0) )
-				{
-					SPI2->DR = SPI_TX_BUF[0];
-					txsize--;
-					txallowed=0;
-				}
-			
-				if( (rxsize>0)&&((SPI2->SR&0x01)!=0) )
-				{
-			
-					SPI_RX_BUF[0]  =  SPI2->DR;
-					rxsize--;
-					txallowed=1;
-					rxdata[count]= SPI_RX_BUF[0];
-					count=(count+1)%M;
-
-				}
-			
-			
-			}
+			count = (count + 1) % M;
+			SPI_RX_BUF[0]=LoopReadVal_7699(count);
 
 			msg_out("count=%d   rx=%x   v=%d\n",count,SPI_RX_BUF[0],(uint32_t)(SPI_RX_BUF[0]*1.0/0xffff*4096));
 
