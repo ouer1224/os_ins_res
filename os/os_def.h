@@ -3,6 +3,7 @@
 #define __OS_DEF_H__
 
 #include "os_errCode.h"
+#include "os_typedef.h"
 #include "task.h"
 
 #define os_true 			1

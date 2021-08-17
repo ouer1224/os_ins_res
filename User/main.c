@@ -10,6 +10,7 @@
 #include "../os/sem.h"
 #include "../os/smallMem.h"
 #include "ad7699.h"
+#include "ad5422.h"
 /*---------------------------------------------------------------------------*/
 /* function: main                                                            */
 /*---------------------------------------------------------------------------*/
@@ -371,342 +372,6 @@ void task_uart3_snd(void)
 	}
 }
 
-static uint16_t s_sr1 = 0;
-static uint16_t s_sr2 = 0;
-
-static uint16_t s_st_tx = 0;
-static uint16_t s_st_rx = 0;
-
-static uint16_t s_dat1 = 0, s_dat2 = 0;
-
-#define u8 uint8_t
-
-#define ADC_REG_STAT ((u8)(0x00 << 3))
-#define ADC_REG_MODE ((u8)(0x01 << 3))
-#define ADC_REG_CONFIG ((u8)(0x02 << 3))
-#define ADC_REG_DATA ((u8)(0x03 << 3))
-#define ADC_REG_ID ((u8)(0x04 << 3))
-#define ADC_REG_IO ((u8)(0x05 << 3))
-#define ADC_REG_OFFSET ((u8)(0x06 << 3))
-
-#define ADC_OP_READ ((u8)(0x40))
-#define ADC_OP_WRITE ((u8)(0x00))
-
-#define ADC_SPI_CS_CLR GPIOB->BSRR = GPIO_Pin_12
-#define ADC_SPI_CS_SET GPIOB->BRR = GPIO_Pin_12
-
-#define IN0 (0x3c49 << 2) // 单极性，全带宽，内部基准4.096V，禁用通道序列器，不回读CFG
-#define IN1 (0x3cc9 << 2)
-#define IN2 (0x3d49 << 2)
-#define IN3 (0x3dc9 << 2)
-#define IN4 (0x3e49 << 2)
-#define IN5 (0x3ec9 << 2)
-#define IN6 (0x3f49 << 2)
-#define IN7 (0x3fc9 << 2)
-#define M 8 // channel num
-
-#if 0
-#define AD5410_LATCH_HIGH() GPIOC->BSRR = GPIO_Pin_4
-#define AD5410_LATCH_LOW() GPIOC->BRR = GPIO_Pin_4
-#else
-
-#define AD5410_LATCH_HIGH() GPIOA->BSRR = GPIO_Pin_4
-#define AD5410_LATCH_LOW() GPIOA->BRR = GPIO_Pin_4
-#endif
-void AD5410xEnableOperate(void)
-{
-	uint32_t i = 0;
-	//拉高LATCH
-	AD5410_LATCH_HIGH();
-
-	for (i = 0; i < 0xff; i++)
-	{
-	}
-
-	//拉低LATCH
-	AD5410_LATCH_LOW();
-}
-
-void AD5410xDisableOperate(void)
-{
-	uint32_t i = 0;
-
-	//拉低LATCH
-	AD5410_LATCH_LOW();
-
-	for (i = 0; i < 0xff; i++)
-	{
-	}
-	//拉高LATCH
-	AD5410_LATCH_HIGH();
-}
-#if 0
-static __inline void spiWriteData(uint8_t *val ,uint32_t len)
-{
-
-	uint32_t count=0;
-	uint8_t txsize=0,rxsize=0;
-	uint8_t txallowed=0;
-	
-
-	AD5410xEnableOperate();
-
-	txsize=len;
-	rxsize=0;
-	txallowed=1;
-	
-	
-	
-	while((txsize>0)||(rxsize>0)) //感觉这是一个比较好的思路,可以在发送的同时监控接收.
-	{
-		if((txsize>0)&&(txallowed==1)&&((SPI1->SR & 0x02)!=0) )
-		{
-			SPI1->DR = val[len-txsize];
-			txsize--;
-		}
-	}
-	
-	while((SPI1->SR & (0x01<<7))!=0); //是否要加入,判断tx为空的标志,还是要判断busy标志.
-
-
-	AD5410xDisableOperate();
-
-
-}
-#else
-static __inline void spiWriteData(uint8_t *val, uint32_t len)
-{
-
-	uint32_t i = 0;
-	uint8_t txsize = 0, rxsize = 0;
-	uint8_t txallowed = 0;
-
-	AD5410xEnableOperate();
-
-	txsize = len;
-	rxsize = 0;
-	txallowed = 1;
-
-	for (i = 0; i < len;)
-	{
-		if ((SPI1->SR & 0x02) != 0)
-		{
-			SPI1->DR = val[i];
-			i++;
-		}
-	}
-
-	while ((SPI1->SR & (0x01 << 7)) != 0)
-		; //是否要加入,判断tx为空的标志,还是要判断busy标志.
-
-	AD5410xDisableOperate();
-}
-
-#endif
-
-#if 0
-static uint8_t AD5410xWriteReg(uint8_t RegAddr, uint16_t value)
-{
-
-	uint8_t SendData[3] = {0x00, 0x00, 0x00};
-	uint32_t i = 0;
-
-	AD5410xEnableOperate();
-
-	SendData[0] = RegAddr;
-	SendData[1] = value >> 8;
-	SendData[2] = value & 0xff;
-
-	for (i = 0; i < 3; i++)
-	{
-		while ((SPI1->SR & 0x02) != 0)
-		{
-			SPI1->DR = SendData[i];
-		}
-	}
-
-	//while((SPI1->SR & 0x02)!=0); //是否要加入,判断tx为空的标志,还是要判断busy标志.
-	while ((SPI2->SR & (0x01 << 7)) != 0)
-		;
-
-	AD5410xDisableOperate();
-
-	return 0;
-}
-#else
-
-static uint8_t AD5410xWriteReg(uint8_t id, uint8_t RegAddr, uint16_t value)
-{
-
-	uint8_t SendData[3 * 8] = {0};
-	uint8_t j=0;
-	uint32_t i = 0;
-	uint8_t txsize = 0, rxsize = 0;
-	uint8_t txallowed = 0;
-	uint8_t len=0;
-
-	memset(SendData, 0, sizeof(SendData));
-
-	AD5410xEnableOperate();
-
-	SendData[(8 - 1 - id) * 3 + 0] = RegAddr;
-	SendData[(8 - 1 - id) * 3 + 1] = value >> 8;
-	SendData[(8 - 1 - id) * 3 + 2] = value & 0xff;
-
-
-	for(j=0;j<8;j++)
-	{
-		len=3;
-		txsize = len;
-		rxsize = 0;
-		txallowed = 1;
-
-		for (i = 0; i < len;)
-		{
-			if ((SPI1->SR & 0x02) != 0)
-			{
-				SPI1->DR = SendData[j*3+i];
-				i++;
-			}
-		}
-
-
-	}
-	
-	while ((SPI1->SR & (0x01 << 7)) != 0); //是否要加入,判断tx为空的标志,还是要判断busy标志.		
-
-	AD5410xDisableOperate();
-
-	return 0;
-}
-#endif
-
-
-static uint8_t s_54_rx[3];
-static uint32_t AD5410xReadReg(uint8_t whichreg)
-{
-
-	uint8_t SendData[3] = {0x02, 0x00, 0x00};
-	uint8_t rxdata[3] = {0, 0, 0};
-	uint32_t count = 0;
-	uint8_t datrx = 0, dattx = 0;
-	uint8_t txsize = 0, rxsize = 0;
-	uint8_t txallowed = 0;
-
-	uint32_t i = 0;
-
-	AD5410xEnableOperate();
-
-	SendData[1] = whichreg >> 8;
-	SendData[2] = whichreg & 0xff;
-
-	spiWriteData(SendData, 3);
-
-	for (i = 0; i < 100; i++)
-	{
-	}
-
-	AD5410xEnableOperate();
-
-	SendData[0] = 0;
-	SendData[1] = 0;
-	SendData[1] = 0;
-
-	txsize = 3;
-	rxsize = 3;
-	txallowed = 1;
-
-	while ((txsize > 0) || (rxsize > 0)) //感觉这是一个比较好的思路,可以在发送的同时监控接收.
-	{
-		if ((txsize > 0) && (txallowed == 1) && ((SPI1->SR & 0x02) != 0))
-		{
-			SPI1->DR = SendData[3 - txsize];
-			txsize--;
-			txallowed = 0;
-		}
-
-		if ((rxsize > 0) && ((SPI1->SR & 0x01) != 0))
-		{
-
-			datrx = SPI1->DR;
-
-			txallowed = 1;
-			rxdata[3 - rxsize] = datrx;
-			rxsize--;
-		}
-	}
-
-	while ((SPI2->SR & (0x01 << 7)) != 0)
-		; //是否要加入,判断tx为空的标志,还是要判断busy标志.
-
-	AD5410xDisableOperate();
-
-	s_54_rx[0] = rxdata[0];
-	s_54_rx[1] = rxdata[1];
-	s_54_rx[2] = rxdata[2];
-
-	return (rxdata[0] << 16) | (rxdata[1] << 8) | rxdata[2];
-}
-
-static uint8_t AD5410xSoftReset()
-{
-	uint8_t SendValidData[3] = {0x56, 0x00, 0x00};
-	uint32_t i = 0;
-	AD5410xEnableOperate();
-	for (i = 0; i < 3; i++)
-	{
-		while ((SPI1->SR & 0x02) != 0)
-		{
-			SPI1->DR = SendValidData[i];
-		}
-	}
-	//while((SPI2->SR & 0x02)!=0); //是否要加入,判断tx为空的标志,还是要判断busy标志.
-	while ((SPI1->SR & (0x01 << 7)) != 0)
-		;
-	for (i = 0; i < 100; i++)
-	{
-	}
-	AD5410xDisableOperate();
-	return 0;
-}
-#define numofad542 8
-#define sizeofad542dat 3
-static uint8_t s_chainbuf[numofad542 * sizeofad542dat];
-static uint8_t spiChainWrite(uint8_t **val, uint32_t arraynum, uint32_t onelen)
-{
-	uint8_t *pr = NULL;
-	uint8_t *prval = NULL;
-	uint32_t i = 0, j = 0;
-	AD5410xEnableOperate();
-
-	prval = (void *)val;
-	for (i = 0; i < numofad542 * sizeofad542dat; i++)
-	{
-		s_chainbuf[i] = prval[i];
-	}
-
-	for (i = 0; i < arraynum; i++)
-	{
-		pr = s_chainbuf + i * 3;
-		for (j = 0; j < onelen;)
-		{
-			if ((SPI1->SR & 0x02) != 0)
-			{
-				SPI1->DR = pr[j];
-				j++;
-			}
-		}
-	}
-
-	while ((SPI1->SR & (0x01 << 7)) != 0);
-
-	for (i = 0; i < 0xff; i++)
-	{
-	}
-
-	AD5410xDisableOperate();
-}
-
 
 void task_run(void)
 {
@@ -727,15 +392,14 @@ void task_run(void)
 	uint8_t adst = 0;
 
 	uint8_t count = 0;
-	uint16_t ad7689_cfg[M] = {IN2, IN3, IN4, IN5, IN6, IN7, IN0, IN1}; // CFG序列，与data错开2个序列
-	uint16_t rxdata[M];
+
 	uint16_t val_cont = 0;
 
 	uint8_t ad54_sendbuf[3];
 
 	uint32_t readdat = 0;
 
-	uint8_t datChain[numofad542][sizeofad542dat];
+	uint8_t datChain[8][3];
 
 	task_sleep(500);
 
@@ -784,7 +448,7 @@ void task_run(void)
 
 
 
-#if 1
+#if 0
 	/*---dac 的spi 的初始化*/
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE); //PORTB时钟使能
@@ -877,7 +541,12 @@ TaskDelay(1);
 
 #endif
 
+#else
+	init_ad5422_chain();
 #endif
+
+
+
 
 	GetStartDelayTime(&time_start);
 	for (;;)
@@ -906,7 +575,7 @@ TaskDelay(1);
 
 		if (adst == 1)
 		{
-			count = (count + 1) % M;
+			count = (count + 1) % 8;
 			SPI_RX_BUF[0]=LoopReadVal_7699(count);
 
 			msg_out("count=%d   rx=%x   v=%d\n", count, SPI_RX_BUF[0], (uint32_t)(SPI_RX_BUF[0] * 1.0 / 0xffff * 4096));
@@ -951,64 +620,60 @@ TaskDelay(1);
 			spiWriteData(ad54_sendbuf,3);
 		}
 #else
-		continue;
 
 		if ((rc % 4) == 0)
 		{
-			//for(i=0;i<numofad542; i++)
-			{
-				memset(datChain, 0, 24);
-				datChain[0][0] = 0x01;
-				datChain[0][1] = (0xffff / 4) >> 8;
-				datChain[0][2] = 0xffff / 4;
-			}
+
+			memset(datChain, 0, 24);
+			datChain[0][0] = 0x01;
+			datChain[0][1] = (0xffff / 6*1) >> 8;
+			datChain[0][2] = 0xffff / 6*1;
+
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]));
+				AD5410xWriteReg_chain(i,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]));
 			}
 		}
+		#if 1
 		else if ((rc % 4) == 1)
 		{
-			//for(i=0;i<numofad542; i++)
-			{
-				memset(datChain, 0, 24);
-				datChain[1][0] = 0x01;
-				datChain[1][1] = (0xffff / 4 * 2) >> 8;
-				datChain[1][2] = 0xffff / 4 * 2;
-			}
+			memset(datChain, 0, 24);
+			datChain[1][0] = 0x01;
+			datChain[1][1] = (0xffff / 6 * 2) >> 8;
+			datChain[1][2] = 0xffff / 6 * 2;
+
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[1][0],(datChain[1][1]<<8)|(datChain[1][2]));
+				AD5410xWriteReg_chain(i,datChain[1][0],(datChain[1][1]<<8)|(datChain[1][2]));
 			}
 		}
 		else if ((rc % 4) == 2)
 		{
-			//for(i=0;i<numofad542; i++)
-			{
-				memset(datChain, 0, 24);
-				datChain[2][0] = 0x01;
-				datChain[2][1] = (0xffff / 4 * 3) >> 8;
-				datChain[2][2] = 0xffff / 4 * 3;
-			}
+
+			memset(datChain, 0, 24);
+			datChain[2][0] = 0x01;
+			datChain[2][1] = (0xffff / 6 * 3) >> 8;
+			datChain[2][2] = 0xffff / 6 * 3;
+
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[2][0],(datChain[2][1]<<8)|(datChain[2][2]));
+				AD5410xWriteReg_chain(i,datChain[2][0],(datChain[2][1]<<8)|(datChain[2][2]));
 			}			
 		}
 		else if ((rc % 4) == 3)
 		{
-			//for(i=0;i<numofad542; i++)
-			{
-				memset(datChain, 0, 24);
-				datChain[3][0] = 0x01;
-				datChain[3][1] = (0xffff / 4 * 0) >> 8;
-				datChain[3][2] = 0xffff / 4 * 0;
-			}
+
+			memset(datChain, 0, 24);
+			datChain[3][0] = 0x01;
+			datChain[3][1] = (0xffff / 6 * 0) >> 8;
+			datChain[3][2] = 0xffff / 6 * 0;
+
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg(i,datChain[3][0],(datChain[3][1]<<8)|(datChain[3][2]));
+				AD5410xWriteReg_chain(i,datChain[3][0],(datChain[3][1]<<8)|(datChain[3][2]));
 			}
 		}
+		#endif
 #endif
 	}
 }

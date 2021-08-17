@@ -7,7 +7,6 @@
 #include "link_list.h"
 #include "os_def.h"
 
-
 #define MAX_NUM_PRIORITY	12		/*最多同时存在N中优先级.*/
 
 

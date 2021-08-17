@@ -485,6 +485,11 @@
               <FileType>1</FileType>
               <FilePath>..\User\ad7699.c</FilePath>
             </File>
+            <File>
+              <FileName>ad5422.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\ad5422.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
