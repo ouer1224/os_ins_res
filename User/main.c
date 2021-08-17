@@ -741,18 +741,7 @@ void task_run(void)
 
 	/*---adc 的spi初始化---*/
 
-#if 0
-	SPI2->I2SCFGR = 0;
-
-	SPI2->CR1=0;
-	SPI2->CR1 |= (0x01<<2)|(0x03<<3);
-	
-	SPI2->CR2=0;
-	SPI2->CR2 |= (0x01<<2);
-
-	SPI2->CR1 |= (0x01<<6);
-#endif
-
+	#if 0
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE); //PORTB时钟使能
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);  //SPI2时钟使能
 
@@ -789,6 +778,11 @@ void task_run(void)
 	SPI2->I2SCFGR &= ((uint16_t)0xF7FF);
 
 	SPI2->CR1 |= (0x01 << 6);
+	#else
+	osassert(init_ad7699());
+	#endif
+
+
 
 #if 1
 	/*---dac 的spi 的初始化*/
@@ -839,8 +833,7 @@ void task_run(void)
 
 	TaskDelay(2500);
 
-	//val_cont=(0x11<<8)|(0x00);
-	///AD5410xWriteReg(0x55,val_cont);
+
 #if 0
 	ad54_sendbuf[0]=0x55;
 	ad54_sendbuf[1]=0x11;
@@ -903,52 +896,18 @@ TaskDelay(1);
 			SPI2->CR1 = tmpreg;
 		}
 #endif
+
+
 		if (adst == 0)
 		{
-			GPIO_SetBits(GPIOB, GPIO_Pin_12);
-
-#if 1
-			for (i = 0; i < 10; i++)
-			{
-				//delay
-			}
-#else
-			TaskDelay(10);
-#endif
-
-			GPIO_ResetBits(GPIOB, GPIO_Pin_12);
-
-			TaskDelay(1);
-
-			adst = 1;
-			txsize = 1;
-			rxsize = 1;
-
-			SPI_TX_BUF[0] = ad7689_cfg[count];
+			adst=1;
+			start_conver_ad7699();
 		}
 
 		if (adst == 1)
 		{
-
-			while ((txsize > 0) || (rxsize > 0)) //感觉这是一个比较好的思路,可以在发送的同时监控接收.
-			{
-				if ((txsize > 0) && (txallowed == 1) && ((SPI2->SR & 0x02) != 0))
-				{
-					SPI2->DR = SPI_TX_BUF[0];
-					txsize--;
-					txallowed = 0;
-				}
-
-				if ((rxsize > 0) && ((SPI2->SR & 0x01) != 0))
-				{
-
-					SPI_RX_BUF[0] = SPI2->DR;
-					rxsize--;
-					txallowed = 1;
-					rxdata[count] = SPI_RX_BUF[0];
-					count = (count + 1) % M;
-				}
-			}
+			count = (count + 1) % M;
+			SPI_RX_BUF[0]=LoopReadVal_7699(count);
 
 			msg_out("count=%d   rx=%x   v=%d\n", count, SPI_RX_BUF[0], (uint32_t)(SPI_RX_BUF[0] * 1.0 / 0xffff * 4096));
 
@@ -992,6 +951,7 @@ TaskDelay(1);
 			spiWriteData(ad54_sendbuf,3);
 		}
 #else
+		continue;
 
 		if ((rc % 4) == 0)
 		{

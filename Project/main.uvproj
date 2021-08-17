@@ -480,6 +480,11 @@
               <FileType>1</FileType>
               <FilePath>..\Driver\hc574.c</FilePath>
             </File>
+            <File>
+              <FileName>ad7699.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\ad7699.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

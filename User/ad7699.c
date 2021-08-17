@@ -94,20 +94,24 @@ fnPrv void spi16BitWriteCfgReadVal(SPI_TypeDef *spi ,uint16_t *pwbuf,uint16_t *p
 	uint8_t txallowed=0;
 	uint32_t countrx=0,counttx=0;
 
+	uint32_t st=0;
+
+	txallowed=1;
 	txsize=len;
 	rxsize=len;
 
 	while ((txsize > 0) || (rxsize > 0)) //感觉这是一个比较好的思路,可以在发送的同时监控接收.
 	{
-		if ((txsize > 0) && (txallowed == 1) && ((spi->SR & 0x02) != 0))
+		st=spi->SR;
+		if ((txsize > 0) && (txallowed == 1) && ((st & 0x02) != 0))
 		{
 			spi->DR = pwbuf[counttx];
 			counttx++;
 			txsize--;
 			txallowed = 0;
 		}
-
-		if ((rxsize > 0) && ((spi->SR & 0x01) != 0))
+		st=spi->SR;
+		if ((rxsize > 0) && ((st & 0x01) != 0))
 		{
 
 			prbuf[countrx] = spi->DR;
@@ -122,7 +126,7 @@ fnPrv void spi16BitWriteCfgReadVal(SPI_TypeDef *spi ,uint16_t *pwbuf,uint16_t *p
 
 fnDri uint16_t LoopReadVal_7699(uint8_t id )
 {
-	uint16_t ad7699_cfg[M] = { IN1,IN2, IN3, IN4, IN5, IN6, IN7, IN0}; // CFG序列，与data错开1个序列
+	uint16_t ad7699_cfg[M] = { IN2, IN3, IN4, IN5, IN6, IN7, IN0, IN1}; // CFG序列，与data错开1个序列
 	uint16_t rxdata=0;
 
 	spi16BitWriteCfgReadVal(SPI2,ad7699_cfg+id,&rxdata,1);
