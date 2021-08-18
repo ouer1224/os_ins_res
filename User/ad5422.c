@@ -209,7 +209,26 @@ fnDri uint8_t init_ad5422_chain(void)
 	return 1;
 }
 
+/*vol单位为mv*/
+fnDri uint8_t set5422VolOut(uint32_t id,uint32_t vol)
+{
+	uint8_t datChain[sizeofad542dat]={0};
+	uint32_t i=0;
 
+	memset(datChain, 0, sizeofad542dat);
+
+	datChain[0] = 0x01;
+
+	i= (0xffff/6000.0*vol);
+
+	datChain[1] = (i >> 8)&0xff;
+	datChain[2] = i &0xff;
+
+	//! 似乎只能 one by one 的进行配置.因为只有第1个配置后,才能传输数据给第2个.
+	AD5410xWriteReg_chain(id,datChain[0],(datChain[1]<<8)|(datChain[2]));
+
+	return 1;
+}
 
 
 

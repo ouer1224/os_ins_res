@@ -623,54 +623,31 @@ TaskDelay(1);
 
 		if ((rc % 4) == 0)
 		{
-
-			memset(datChain, 0, 24);
-			datChain[0][0] = 0x01;
-			datChain[0][1] = (0xffff / 6*1) >> 8;
-			datChain[0][2] = 0xffff / 6*1;
-
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg_chain(i,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]));
+				set5422VolOut(i,1000);
 			}
 		}
 		#if 1
 		else if ((rc % 4) == 1)
 		{
-			memset(datChain, 0, 24);
-			datChain[1][0] = 0x01;
-			datChain[1][1] = (0xffff / 6 * 2) >> 8;
-			datChain[1][2] = 0xffff / 6 * 2;
-
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg_chain(i,datChain[1][0],(datChain[1][1]<<8)|(datChain[1][2]));
+				set5422VolOut(i,5000);
 			}
 		}
 		else if ((rc % 4) == 2)
 		{
-
-			memset(datChain, 0, 24);
-			datChain[2][0] = 0x01;
-			datChain[2][1] = (0xffff / 6 * 3) >> 8;
-			datChain[2][2] = 0xffff / 6 * 3;
-
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg_chain(i,datChain[2][0],(datChain[2][1]<<8)|(datChain[2][2]));
+				set5422VolOut(i,3000);
 			}			
 		}
 		else if ((rc % 4) == 3)
 		{
-
-			memset(datChain, 0, 24);
-			datChain[3][0] = 0x01;
-			datChain[3][1] = (0xffff / 6 * 0) >> 8;
-			datChain[3][2] = 0xffff / 6 * 0;
-
 			for(i=0;i<8;i++)
 			{
-				AD5410xWriteReg_chain(i,datChain[3][0],(datChain[3][1]<<8)|(datChain[3][2]));
+				set5422VolOut(i,0);
 			}
 		}
 		#endif
