@@ -554,7 +554,7 @@ TaskDelay(1);
 		msg_out("task running %d \n", rc);
 		rc++;
 
-		TaskDelayPeriodic(1000, &time_start);
+		TaskDelayPeriodic(3000, &time_start);
 #if 1
 		msg_out("CR1=%x\n", SPI2->CR1);
 		msg_out("SR=%x\n", SPI2->SR);
