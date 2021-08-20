@@ -126,11 +126,69 @@ fnPrv void spi16BitWriteCfgReadVal(SPI_TypeDef *spi ,uint16_t *pwbuf,uint16_t *p
 
 fnDri uint16_t LoopReadVal_7699(uint8_t id )
 {
-	uint16_t ad7699_cfg[M] = { IN2, IN3, IN4, IN5, IN6, IN7, IN0, IN1}; // CFG序列，与data错开1个序列
+	//uint16_t ad7699_cfg[M] = { IN2, IN3, IN4, IN5, IN6, IN7, IN0, IN1}; // CFG序列，与data错开1个序列
+	uint16_t ad7699_cfg[M] = { IN0, IN0, IN0, IN0, IN0, IN0, IN0, IN0};
 	uint16_t rxdata=0;
 
 	spi16BitWriteCfgReadVal(SPI2,ad7699_cfg+id,&rxdata,1);
 
 	return rxdata;
 }
+#define Select_7699_0()		GPIO_SetBits(GPIOC, GPIO_Pin_6);	
+#define DisSelect_7699_0()	GPIO_ResetBits(GPIOC, GPIO_Pin_6);	
 
+#define Select_7699_1()		GPIO_SetBits(GPIOC, GPIO_Pin_7);	
+#define DisSelect_7699_1()	GPIO_ResetBits(GPIOC, GPIO_Pin_7);
+
+/*在 init_7699函数的后面使用,初始化7699的选通io*/
+fnDri uint8_t init7699SelectIO(void)
+{
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, 1); //PORTC时钟使能
+	DisSelect_7699_0();
+	DisSelect_7699_1();
+	return 1;
+}
+
+
+/*选通某个7699.
+当id为ff时,表示全都不选通
+当command为1时,表示选通.	为0时,表示禁止
+*/
+fnDri uint8_t selectWhich7699(uint8_t id,uint8_t command)
+{
+	switch (id)
+	{
+		case 0:
+		{
+			if(command == 1)
+			{
+				Select_7699_0();
+			}
+			else
+			{
+				DisSelect_7699_0();
+			}
+		}
+		break;
+
+		case 1:
+		{
+			if(command == 1)
+			{
+				Select_7699_1();
+			}
+			else
+			{
+				DisSelect_7699_1();
+			}
+		}
+		break;
+
+		default:
+			DisSelect_7699_0();
+			DisSelect_7699_1();
+			break;
+	}
+
+	return 1;
+}

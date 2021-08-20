@@ -210,7 +210,7 @@ fnDri uint8_t init_ad5422_chain(void)
 }
 
 /*volµ¥Î»Îªmv*/
-fnDri uint8_t set5422VolOut(uint32_t id,uint32_t vol)
+fnDri uint8_t set5422VolOut(uint8_t id,uint32_t vol)
 {
 	uint8_t datChain[sizeofad542dat]={0};
 	uint32_t i=0;

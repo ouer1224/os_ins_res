@@ -444,6 +444,7 @@ void task_run(void)
 	SPI2->CR1 |= (0x01 << 6);
 	#else
 	osassert(init_ad7699());
+	osassert(init7699SelectIO());
 	#endif
 
 
@@ -546,7 +547,16 @@ TaskDelay(1);
 #endif
 
 
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE); //PORTC时钟使能
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; //选择最高的输出速度有2MHZ,10MHZ,50MHZ,
 
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;			  //nss
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	  //
+	GPIO_Init(GPIOC, &GPIO_InitStructure);				  //按照上面的参数初始化一下
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;			  //nss
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	  //
+	GPIO_Init(GPIOC, &GPIO_InitStructure);				  //按照上面的参数初始化一下	
 
 	GetStartDelayTime(&time_start);
 	for (;;)
@@ -554,7 +564,7 @@ TaskDelay(1);
 		msg_out("task running %d \n", rc);
 		rc++;
 
-		TaskDelayPeriodic(3000, &time_start);
+		TaskDelayPeriodic(1000, &time_start);
 #if 1
 		msg_out("CR1=%x\n", SPI2->CR1);
 		msg_out("SR=%x\n", SPI2->SR);
@@ -566,7 +576,9 @@ TaskDelay(1);
 		}
 #endif
 
-
+		GPIO_SetBits(GPIOC, GPIO_Pin_7);
+		GPIO_ResetBits(GPIOC, GPIO_Pin_6);
+		//selectWhich7699(1,1);
 		if (adst == 0)
 		{
 			adst=1;
