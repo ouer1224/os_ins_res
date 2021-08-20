@@ -576,9 +576,10 @@ TaskDelay(1);
 		}
 #endif
 
-		GPIO_SetBits(GPIOC, GPIO_Pin_7);
-		GPIO_ResetBits(GPIOC, GPIO_Pin_6);
+		//GPIO_SetBits(GPIOC, GPIO_Pin_6);
+		//GPIO_ResetBits(GPIOC, GPIO_Pin_7);
 		//selectWhich7699(1,1);
+		selectWhich7699(rc%2,1);
 		if (adst == 0)
 		{
 			adst=1;
@@ -594,7 +595,7 @@ TaskDelay(1);
 
 			adst = 0;
 		}
-
+		selectWhich7699(0xff,1);
 #if 0
 		if((rc%4)==0)
 		{
