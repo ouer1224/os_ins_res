@@ -3,7 +3,7 @@
 
 fnDri uint8_t AD5410xWriteReg_chain(uint8_t id, uint8_t RegAddr, uint16_t value);
 fnDri uint8_t init_ad5422_chain(void);
-fnDri uint8_t set5422VolOut(uint8_t id,uint32_t vol);
+fnDri uint8_t set5422VolOut_chain(uint8_t id,uint32_t vol);
 
 
 

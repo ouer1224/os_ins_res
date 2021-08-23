@@ -143,7 +143,21 @@ fnDri uint16_t LoopReadVal_7699(uint8_t id )
 /*在 init_7699函数的后面使用,初始化7699的选通io*/
 fnDri uint8_t init7699SelectIO(void)
 {
+	GPIO_InitTypeDef GPIO_InitStructure; //用于设置GPIO口的基本参数
+	
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, 1); //PORTC时钟使能
+	
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE); //PORTC时钟使能
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; //选择最高的输出速度有2MHZ,10MHZ,50MHZ,
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;			  //nss
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	  //
+	GPIO_Init(GPIOC, &GPIO_InitStructure);				  //按照上面的参数初始化一下
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;			  //nss
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	  //
+	GPIO_Init(GPIOC, &GPIO_InitStructure);				  //按照上面的参数初始化一下	
+
 	DisSelect_7699_0();
 	DisSelect_7699_1();
 	return 1;

@@ -209,8 +209,10 @@ fnDri uint8_t init_ad5422_chain(void)
 	return 1;
 }
 
-/*vol单位为mv*/
-fnDri uint8_t set5422VolOut(uint8_t id,uint32_t vol)
+/*
+菊花链的方式设置dac的输出
+vol单位为mv*/
+fnDri uint8_t set5422VolOut_chain(uint8_t id,uint32_t vol)
 {
 	uint8_t datChain[sizeofad542dat]={0};
 	uint32_t i=0;

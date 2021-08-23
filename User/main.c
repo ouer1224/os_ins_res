@@ -11,6 +11,7 @@
 #include "../os/smallMem.h"
 #include "ad7699.h"
 #include "ad5422.h"
+#include "utils.h"
 /*---------------------------------------------------------------------------*/
 /* function: main                                                            */
 /*---------------------------------------------------------------------------*/
@@ -45,6 +46,10 @@ volatile struct selfos_task_struct tcb_task_uart3_snd;
 #define TASK_RUN_STK_SIZE 128
 static unsigned int task_run_Stk[TASK_RUN_STK_SIZE];
 volatile struct selfos_task_struct tcb_task_run;
+
+#define TASK_ADC_STK_SIZE 128
+static unsigned int task_adc_Stk[TASK_ADC_STK_SIZE];
+volatile struct selfos_task_struct tcb_task_adc;
 
 /*--信号量----*/
 SemCB testsem;
@@ -372,301 +377,105 @@ void task_uart3_snd(void)
 	}
 }
 
-
-void task_run(void)
+void task_adc(void)
 {
 	uint32_t rc = 0;
 	uint32_t i = 0;
-	uint8_t flag = 0;
-	volatile uint16_t tmp = 0;
-	uint32_t time_start = 0;
-	uint16_t tmpreg = 0;
-	GPIO_InitTypeDef GPIO_InitStructure; //用于设置GPIO口的基本参数
 
-	uint16_t SPI_TX_BUF[1]; //CFG寄存器内容
-	uint16_t SPI_RX_BUF[1];
+	uint32_t time_start=0;
 
-	uint32_t txsize = 0, rxsize = 0;
-	uint8_t txallowed = 1;
+	uint16_t SPI_RX_BUF[10];
+	uint32_t sum=0;
+	uint32_t pos_rx=0;
 
+
+	uint32_t count=0;
 	uint8_t adst = 0;
-
-	uint8_t count = 0;
-
-	uint16_t val_cont = 0;
-
-	uint8_t ad54_sendbuf[3];
-
-	uint32_t readdat = 0;
-
-	uint8_t datChain[8][3];
 
 	task_sleep(500);
 
 	/*---adc 的spi初始化---*/
 
-	#if 0
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE); //PORTB时钟使能
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);  //SPI2时钟使能
-
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; //选择最高的输出速度有2MHZ,10MHZ,50MHZ,
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;			  //nss
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	  //
-	GPIO_Init(GPIOB, &GPIO_InitStructure);				  //按照上面的参数初始化一下
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;			  //sck
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;		  //
-	GPIO_Init(GPIOB, &GPIO_InitStructure);				  //按照上面的参数进行初始化
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;			  //MISO
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; //
-	GPIO_Init(GPIOB, &GPIO_InitStructure);				  //按照上面的参数进行初始化
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;			  //MOSI
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;		  //
-	GPIO_Init(GPIOB, &GPIO_InitStructure);				  //按照上面的参数进行初始化
-
-	GPIO_ResetBits(GPIOB, GPIO_Pin_12);
-	GPIO_SetBits(GPIOB, GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15); //是否有必要进行再次初始化
-
-	tmpreg = SPI2->CR1;
-	/* Clear BIDIMode, BIDIOE, RxONLY, SSM, SSI, LSBFirst, BR, MSTR, CPOL and CPHA bits */
-	tmpreg &= 0x3040;
-
-	tmpreg |= (uint16_t)((uint32_t)(SPI_Direction_2Lines_FullDuplex) | (SPI_Mode_Master) |
-						 (SPI_DataSize_16b) | (SPI_CPOL_Low) |
-						 (SPI_NSS_Soft) | (SPI_CPHA_1Edge) | //似乎就得是 第1个沿
-						 (SPI_BaudRatePrescaler_16) | (SPI_FirstBit_MSB));
-	/* Write to SPIx CR1 */
-	SPI2->CR1 = tmpreg;
-
-	/* Activate the SPI mode (Reset I2SMOD bit in I2SCFGR register) */
-	SPI2->I2SCFGR &= ((uint16_t)0xF7FF);
-
-	SPI2->CR1 |= (0x01 << 6);
-	#else
 	osassert(init_ad7699());
 	osassert(init7699SelectIO());
-	#endif
-
-
-
-#if 0
-	/*---dac 的spi 的初始化*/
-
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE); //PORTB时钟使能
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);  //SPI2时钟使能
-
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; //选择最高的输出速度有2MHZ,10MHZ,50MHZ,
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;			  //nss
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	  //
-	GPIO_Init(GPIOA, &GPIO_InitStructure);				  //按照上面的参数初始化一下
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;			  //sck
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;		  //
-	GPIO_Init(GPIOA, &GPIO_InitStructure);				  //按照上面的参数进行初始化
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;			  //MISO
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; //
-	GPIO_Init(GPIOA, &GPIO_InitStructure);				  //按照上面的参数进行初始化
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;			  //MOSI
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;		  //
-	GPIO_Init(GPIOA, &GPIO_InitStructure);				  //按照上面的参数进行初始化
-
-	GPIO_ResetBits(GPIOA, GPIO_Pin_12);
-	GPIO_SetBits(GPIOA, GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15); //是否有必要进行再次初始化
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;		 //latch
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; //
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	GPIO_SetBits(GPIOA, GPIO_Pin_4);
-
-	tmpreg = SPI1->CR1;
-	/* Clear BIDIMode, BIDIOE, RxONLY, SSM, SSI, LSBFirst, BR, MSTR, CPOL and CPHA bits */
-	tmpreg &= 0x3040;
-
-	tmpreg |= (uint16_t)((uint32_t)(SPI_Direction_2Lines_FullDuplex) | (SPI_Mode_Master) |
-						 (SPI_DataSize_8b) | (SPI_CPOL_Low) |
-						 (SPI_NSS_Soft) | (SPI_CPHA_1Edge) | //似乎就得是 第1个沿
-						 (SPI_BaudRatePrescaler_16) | (SPI_FirstBit_MSB));
-	/* Write to SPIx CR1 */
-	SPI1->CR1 = tmpreg;
-
-	/* Activate the SPI mode (Reset I2SMOD bit in I2SCFGR register) */
-	SPI1->I2SCFGR &= ((uint16_t)0xF7FF);
-
-	SPI1->CR1 |= (0x01 << 6);
-
-	msg_out("start chaline\n");
-
-	TaskDelay(2500);
-
-
-#if 0
-	ad54_sendbuf[0]=0x55;
-	ad54_sendbuf[1]=0x11;
-	ad54_sendbuf[2]=0x00;
-	spiWriteData(ad54_sendbuf,3);
-#else
-
-
-	for (i = 0; i < numofad542; i++)
-	{
-
-		memset(datChain, 0, 24);
-
-		datChain[i][0] = 0x56;
-		datChain[i][1] = 0;
-		datChain[i][2] = 1;
-		//spiChainWrite((void *)datChain, numofad542, sizeofad542dat);
-
-		AD5410xWriteReg(i,0x55,(datChain[i][1]<<8)|(datChain[i][2]));
-	}
-
-TaskDelay(1);
-
-
-	//配置为 菊花链
-	for (i = 0; i < numofad542; i++)
-	{
-
-		memset(datChain, 0, 24);
-
-		datChain[i][0] = 0x55;
-		datChain[i][1] = 0x31;
-		datChain[i][2] = 0x01 | (0x01 << 3);
-		//spiChainWrite((void *)datChain, numofad542, sizeofad542dat);
-
-		AD5410xWriteReg(i,0x55,(datChain[i][1]<<8)|(datChain[i][2]));
-	}
-
-	msg_out("cfg chainline\n");
-
-
-#endif
-
-#else
-	init_ad5422_chain();
-#endif
-
-
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE); //PORTC时钟使能
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; //选择最高的输出速度有2MHZ,10MHZ,50MHZ,
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;			  //nss
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	  //
-	GPIO_Init(GPIOC, &GPIO_InitStructure);				  //按照上面的参数初始化一下
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;			  //nss
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	  //
-	GPIO_Init(GPIOC, &GPIO_InitStructure);				  //按照上面的参数初始化一下	
+	/*---dac 的spi及IO初始化---*/
+	osassert(init_ad5422_chain());
 
 	GetStartDelayTime(&time_start);
+
+	pos_rx=0;
+
 	for (;;)
 	{
-		msg_out("task running %d \n", rc);
+		
 		rc++;
+		TaskDelayPeriodic(100, &time_start);
 
-		TaskDelayPeriodic(1000, &time_start);
-#if 1
-		msg_out("CR1=%x\n", SPI2->CR1);
-		msg_out("SR=%x\n", SPI2->SR);
-		if (flag == 1)
-		{
-			flag = 0;
-			tmp = SPI2->SR;
-			SPI2->CR1 = tmpreg;
-		}
-#endif
-
-		//GPIO_SetBits(GPIOC, GPIO_Pin_6);
-		//GPIO_ResetBits(GPIOC, GPIO_Pin_7);
-		//selectWhich7699(1,1);
+/*adc 输入*/
 		selectWhich7699(rc%2,1);
 		if (adst == 0)
 		{
 			adst=1;
 			start_conver_ad7699();
 		}
-
 		if (adst == 1)
 		{
 			count = (count + 1) % 8;
-			SPI_RX_BUF[0]=LoopReadVal_7699(count);
 
-			msg_out("count=%d   rx=%x   v=%d\n", count, SPI_RX_BUF[0], (uint32_t)(SPI_RX_BUF[0] * 1.0 / 0xffff * 4096));
+			SPI_RX_BUF[pos_rx]=LoopReadVal_7699(count);
+			pos_rx=(pos_rx+1)%10;
+
+			
+			if(pos_rx>=9)
+			{
+				
+				sum=get_filterVal_avr(SPI_RX_BUF,10);
+
+				msg_out("count=%d   rx=%x   v=%d\n", count, sum, (uint32_t)(sum * 1.0 / 0xffff * 4096));
+			}
+
 
 			adst = 0;
 		}
 		selectWhich7699(0xff,1);
-#if 0
-		if((rc%4)==0)
-		{
-			//readdat=AD5410xReadReg(0x01);
-			//AD5410xWriteReg(0x01,0x7fff);
-			ad54_sendbuf[0]=0x01;
-			ad54_sendbuf[1]=(0xffff/4)>>8;
-			ad54_sendbuf[2]=0xffff/4;
-			spiWriteData(ad54_sendbuf,3);
-		}
-		else if((rc%4)==1)
-		{
 
-			ad54_sendbuf[0]=0x01;
-			ad54_sendbuf[1]=(0xffff/4*2)>>8;
-			ad54_sendbuf[2]=0xffff/4*2;
-
-			spiWriteData(ad54_sendbuf,3);
-			//AD5410xWriteReg(0x01,0x00);
-		}
-		else if((rc%4)==2)
-		{
-			ad54_sendbuf[0]=0x01;
-			ad54_sendbuf[1]=(0xffff/4*3)>>8;
-			ad54_sendbuf[2]=0xffff/4*3;
-
-			spiWriteData(ad54_sendbuf,3);
-		}
-		else if((rc%4)==3)
-		{
-			ad54_sendbuf[0]=0x01;
-			ad54_sendbuf[1]=(0xffff/4*4)>>8;
-			ad54_sendbuf[2]=0xffff/4*4;
-
-			spiWriteData(ad54_sendbuf,3);
-		}
-#else
-
+/* dac 输出*/
 		if ((rc % 4) == 0)
 		{
 			for(i=0;i<8;i++)
 			{
-				set5422VolOut(i,1000);
+				set5422VolOut_chain(i,1000);
 			}
 		}
-		#if 1
-		else if ((rc % 4) == 1)
-		{
-			for(i=0;i<8;i++)
-			{
-				set5422VolOut(i,5000);
-			}
-		}
-		else if ((rc % 4) == 2)
-		{
-			for(i=0;i<8;i++)
-			{
-				set5422VolOut(i,3000);
-			}			
-		}
-		else if ((rc % 4) == 3)
-		{
-			for(i=0;i<8;i++)
-			{
-				set5422VolOut(i,0);
-			}
-		}
-		#endif
-#endif
+
 	}
 }
+
+void task_run(void)
+{
+
+	uint32_t rc = 0;
+	uint32_t i = 0;
+
+	uint32_t time_start=0;
+
+
+	TaskDelay(1000);
+	GetStartDelayTime(&time_start);
+	for(;;)
+	{
+		msg_out("task running %d \n", rc);
+		rc++;
+
+		TaskDelayPeriodic(1000, &time_start);		
+
+
+
+	}
+
+	
+}
+
 
 #define mem_buf_size 1024
 static uint8_t s_buf[mem_buf_size];
@@ -711,7 +520,10 @@ int main(void)
 					   &task_uart3_snd_Stk[TASK_UART3_SND_STK_SIZE - 1], 9);
 
 	selfos_create_task(&tcb_task_run, task_run,
-					   &task_run_Stk[TASK_RUN_STK_SIZE - 1], 3);
+					   &task_run_Stk[TASK_RUN_STK_SIZE - 1], 11);
+
+	selfos_create_task(&tcb_task_adc, task_adc,
+					   &task_adc_Stk[TASK_ADC_STK_SIZE - 1], 3);					   
 
 	/*--创建信号量---*/
 	sem_creat(&testsem, 1, 1);
