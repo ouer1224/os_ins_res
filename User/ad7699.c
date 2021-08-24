@@ -134,11 +134,7 @@ fnDri uint16_t LoopReadVal_7699(uint8_t id )
 
 	return rxdata;
 }
-#define Select_7699_0()		GPIO_SetBits(GPIOC, GPIO_Pin_6);	
-#define DisSelect_7699_0()	GPIO_ResetBits(GPIOC, GPIO_Pin_6);	
 
-#define Select_7699_1()		GPIO_SetBits(GPIOC, GPIO_Pin_7);	
-#define DisSelect_7699_1()	GPIO_ResetBits(GPIOC, GPIO_Pin_7);
 
 /*在 init_7699函数的后面使用,初始化7699的选通io*/
 fnDri uint8_t init7699SelectIO(void)
@@ -170,38 +166,32 @@ fnDri uint8_t init7699SelectIO(void)
 */
 fnDri uint8_t selectWhich7699(uint8_t id,uint8_t command)
 {
-	switch (id)
+	if(id==0)
 	{
-		case 0:
+		if(command==1)
 		{
-			if(command == 1)
-			{
-				Select_7699_0();
-			}
-			else
-			{
-				DisSelect_7699_0();
-			}
+			Select_7699_0();
 		}
-		break;
-
-		case 1:
+		else
 		{
-			if(command == 1)
-			{
-				Select_7699_1();
-			}
-			else
-			{
-				DisSelect_7699_1();
-			}
-		}
-		break;
-
-		default:
 			DisSelect_7699_0();
+		}
+	}
+	else if(id==1)
+	{
+		if(command==1)
+		{
+			Select_7699_1();
+		}
+		else
+		{
 			DisSelect_7699_1();
-			break;
+		}	
+	}
+	else
+	{
+		DisSelect_7699_0();
+		DisSelect_7699_1();
 	}
 
 	return 1;

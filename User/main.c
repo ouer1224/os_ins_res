@@ -398,9 +398,10 @@ void task_adc(void)
 
 	osassert(init_ad7699());
 	osassert(init7699SelectIO());
+#if 0	
 	/*---dac 的spi及IO初始化---*/
 	osassert(init_ad5422_chain());
-
+#endif
 	GetStartDelayTime(&time_start);
 
 	pos_rx=0;
@@ -412,7 +413,8 @@ void task_adc(void)
 		TaskDelayPeriodic(100, &time_start);
 
 /*adc 输入*/
-		selectWhich7699(rc%2,1);
+		//selectWhich7699(1,1);
+		Select_7699_0();
 		if (adst == 0)
 		{
 			adst=1;
@@ -437,8 +439,9 @@ void task_adc(void)
 
 			adst = 0;
 		}
-		selectWhich7699(0xff,1);
-
+		//selectWhich7699(0xff,0);
+		DisSelect_7699_0();
+#if 0
 /* dac 输出*/
 		if ((rc % 4) == 0)
 		{
@@ -447,6 +450,7 @@ void task_adc(void)
 				set5422VolOut_chain(i,1000);
 			}
 		}
+#endif		
 
 	}
 }
