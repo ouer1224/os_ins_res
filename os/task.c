@@ -10,12 +10,7 @@
 #include "cortex_m4_register.h"
 #include "stm32f10x.h"
 
-#if 1
 
-extern volatile struct selfos_task_struct tcb_task_deal_ins_res;
-extern volatile struct selfos_task_struct taskB;
-extern volatile struct selfos_task_struct taskC;
-#endif
 
 
 

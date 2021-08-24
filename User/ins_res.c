@@ -11,7 +11,10 @@
 
 #include "os_sprintf.h"
 #include "../os/task.h"
-
+#include "../os/sem.h"
+#include "../os/queue.h"
+#include "../os/mem_manage.h"
+#include "../os/smallMem.h"
 
 #define CMD_MASTER_INIT				'I'
 #define CMD_MASTER_INQUIRE			'Q'
@@ -19,6 +22,9 @@
 #define CMD_MASTER_WRITE			'W'
 
 #define ADRESS_MASTER				'0'
+
+extern QueueCB queue_adc_result;
+extern SemCB sem_getadc_result;
 
 
 
@@ -549,7 +555,31 @@ uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 {
 
 	uint32_t *pr=NULL;
+	uint32_t st=0;
+	uint8_t *pr_rcv=NULL;
+	uint32_t adc_buf[8+1];
+	uint32_t i=0;
+
+	get_dat_from_queue(&queue_adc_result,&pr_rcv,0,0);
 	
+	for(i=0;i<3; i++)
+	{
+		sem_release(&sem_getadc_result);
+		msg_out("==read_msg\n");
+		st=get_dat_from_queue(&queue_adc_result,&pr_rcv,3000,0);
+		if(st==os_true)
+		{
+			memcpy(adc_buf,pr_rcv,16);
+			free_mem_to_pool(&pr_rcv);
+			msg_out("dac_res=%d\n",adc_buf[0]);
+		}
+		else
+		{
+			//exception
+		}		
+	}
+	
+
 
 	pr=(void *)(s_buf_write+0);
 	*pr=0;
@@ -559,7 +589,7 @@ uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	*pr=getLocalResGnd();
 
 
-	msg->msg_head.len=12;
+	msg->msg_head.len=32;
 	msg->msg_head.adress_dest=ADRESS_MASTER;
 	msg->msg_head.funcode=CMD_MASTER_READ;
 	msg->msg_head.head='$';

@@ -9,12 +9,11 @@
 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
 #include "include.h "
 
-extern u8 test_data[512];
 extern u16 uart1_recv_length;
 extern u8 uart1_recv_buf[UART1_FIFO_SIZE];
-extern u8 command;
-extern u8 Sand_data[600];
-extern u8 REALY_DATA_1,REALY_DATA_2,REALY_DATA_3,REALY_DATA_4,REALY_DATA_5;
+u8 command;
+u8 Sand_data[600];
+u8 REALY_DATA_1,REALY_DATA_2,REALY_DATA_3,REALY_DATA_4,REALY_DATA_5;
 u16 crc_data = 0;
 u8 send_fifo_buf[600] = {0};
 

@@ -126,8 +126,8 @@ fnPrv void spi16BitWriteCfgReadVal(SPI_TypeDef *spi ,uint16_t *pwbuf,uint16_t *p
 
 fnDri uint16_t LoopReadVal_7699(uint8_t id )
 {
-	//uint16_t ad7699_cfg[M] = { IN2, IN3, IN4, IN5, IN6, IN7, IN0, IN1}; // CFG序列，与data错开1个序列
-	uint16_t ad7699_cfg[M] = { IN0, IN0, IN0, IN0, IN0, IN0, IN0, IN0};
+	uint16_t ad7699_cfg[M] = { IN2, IN3, IN4, IN5, IN6, IN7, IN0, IN1}; // CFG序列，与data错开1个序列
+	//uint16_t ad7699_cfg[M] = { IN0, IN0, IN0, IN0, IN0, IN0, IN0, IN0};
 	uint16_t rxdata=0;
 
 	spi16BitWriteCfgReadVal(SPI2,ad7699_cfg+id,&rxdata,1);

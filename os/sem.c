@@ -103,9 +103,10 @@ uint32_t sem_acquire(SemCB *pr,uint32_t delay)
 		exit_critical_area();
 
 
-		rc=os_true;
+	
 		if(delay>0)
 		{
+			rc=os_true;	
 			OS_readyToSwitch();
 			//todo:从此位置开始,就应该进入临界区
 			while(gp_selfos_cur_task->state==OS_SUSPEND);

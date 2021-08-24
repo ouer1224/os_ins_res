@@ -16,16 +16,11 @@
 /* function: main                                                            */
 /*---------------------------------------------------------------------------*/
 
-u8 read_data[8] = {0};
-u8 test_data[512] = {0};
-u8 command = 0;
-u8 Sand_data[600] = {0};
-u8 REALY_DATA_1, REALY_DATA_2, REALY_DATA_3, REALY_DATA_4, REALY_DATA_5;
 
 /*---任务-----*/
-#define TASK_DEAL_INSRES_STK_SIZE 128
-static unsigned int task_deal_ins_res_Stk[TASK_DEAL_INSRES_STK_SIZE];
-volatile struct selfos_task_struct tcb_task_deal_ins_res;
+#define TASK_DEAL_CMD_STK_SIZE 128
+static unsigned int task_deal_cmd_Stk[TASK_DEAL_CMD_STK_SIZE];
+volatile struct selfos_task_struct tcb_task_deal_cmd;
 
 #define TASKB_STK_SIZE 128
 static unsigned int taskB_Stk[TASKB_STK_SIZE];
@@ -56,6 +51,7 @@ SemCB testsem;
 SemCB sem_uart1rcv;
 SemCB sem_uart3rcv;
 SemCB sem_deal_complete;
+SemCB sem_getadc_result;
 
 /*----内存块----*/
 #define LEN_UART1_RCV_MEM 12
@@ -73,6 +69,16 @@ static uint8_t buf_mempool_uart3_snd[LEN_UART3_SND_MEM * DEEP_UART3_SND_MEM];
 mem_pool pool_timer2;
 static uint8_t buf_mempool_timer2[LEN_TIMER2_MEM * DEEP_TIMER2_MEM];
 
+#define LEN_ADC_RESULT_MEM 32
+#define DEEP_ADC_RESULT_MEM 1
+mem_pool pool_adc_result;
+static uint8_t buf_mempool_adc_result[LEN_ADC_RESULT_MEM * DEEP_ADC_RESULT_MEM];
+
+
+
+
+
+
 /*---队列-----*/
 #define DEEP_QUEUE_UART1_RCV DEEP_UART1_RCV_MEM
 static uint32_t queue_mem_uart1_rcv[DEEP_QUEUE_UART1_RCV];
@@ -85,6 +91,15 @@ QueueCB queue_uart3_snd;
 #define DEEP_QUE_TIMER2 DEEP_TIMER2_MEM
 static uint32_t que_mem_timer2[DEEP_QUE_TIMER2];
 QueueCB queue_timer2;
+
+#define DEEP_QUE_ADC_RESULT DEEP_ADC_RESULT_MEM
+static uint32_t que_mem_adc_result[DEEP_QUE_ADC_RESULT];
+QueueCB queue_adc_result;
+
+
+
+
+
 
 uint32_t uput_dat_to_queue(QueueCB *pr_q, mem_pool *pr_pool, uint8_t *pr_dat, uint32_t len, uint32_t delay)
 {
@@ -133,7 +148,7 @@ uint32_t send_dat_to_uart3(uint8_t *buf, uint32_t len)
 	return uput_dat_to_queue(&queue_uart3_snd, &pool_uart3_snd, buf, len, 100);
 }
 
-void task_deal_ins_res(void)
+void task_deal_cmd(void)
 {
 	uint32_t rc = 0;
 	uint32_t count = 0;
@@ -384,9 +399,12 @@ void task_adc(void)
 
 	uint32_t time_start=0;
 
-	uint16_t SPI_RX_BUF[10];
+	uint32_t SPI_RX_BUF[10];
+	uint32_t adc_dat[8+1];
+	uint8_t *pr_send=NULL;
 	uint32_t sum=0;
 	uint32_t pos_rx=0;
+	uint32_t st=0;
 
 
 	uint32_t count=0;
@@ -398,10 +416,10 @@ void task_adc(void)
 
 	osassert(init_ad7699());
 	osassert(init7699SelectIO());
-#if 0	
+
 	/*---dac 的spi及IO初始化---*/
 	osassert(init_ad5422_chain());
-#endif
+
 	GetStartDelayTime(&time_start);
 
 	pos_rx=0;
@@ -410,7 +428,7 @@ void task_adc(void)
 	{
 		
 		rc++;
-		TaskDelayPeriodic(100, &time_start);
+		TaskDelayPeriodic(500, &time_start);
 
 /*adc 输入*/
 		//selectWhich7699(1,1);
@@ -424,33 +442,47 @@ void task_adc(void)
 		{
 			count = (count + 1) % 8;
 
-			SPI_RX_BUF[pos_rx]=LoopReadVal_7699(count);
-			pos_rx=(pos_rx+1)%10;
+			SPI_RX_BUF[count]=LoopReadVal_7699(count);
+			//pos_rx=(pos_rx+1)%8;
 
-			
-			if(pos_rx>=9)
+			if(count>=7)
 			{
 				
-				sum=get_filterVal_avr(SPI_RX_BUF,10);
+				//sum=get_filterVal_avr(SPI_RX_BUF,7);
+				//adc_dat[0]=sum;
+				st=sem_acquire(&sem_getadc_result,0);
+				msg_out("==sem_adc=%x\n",st);
+				if(st==os_true)
+				{
+					pr_send=get_mem_from_pool(&pool_adc_result,LEN_ADC_RESULT_MEM);
+					msg_out("pool.free=%x , allocate=%x\n",pool_adc_result.free[0],pool_adc_result.allocated[0]);
+					if(pr_send!=NULL)
+					{
+						memcpy(pr_send,SPI_RX_BUF,32);
+						st=put_dat_to_queue(&queue_adc_result,pr_send,100,0);
+						msg_out("==put_adc_dat==%x\n",st);	
+					}
+					
+				}	
 
-				msg_out("count=%d   rx=%x   v=%d\n", count, sum, (uint32_t)(sum * 1.0 / 0xffff * 4096));
+				
 			}
-
+			msg_out("count=%d   rx=%x   v=%d\n", count, SPI_RX_BUF[count], (uint32_t)(SPI_RX_BUF[count] * 1.0 / 0xffff * 4096));
 
 			adst = 0;
 		}
 		//selectWhich7699(0xff,0);
-		DisSelect_7699_0();
-#if 0
+		//DisSelect_7699_0();
+
 /* dac 输出*/
-		if ((rc % 4) == 0)
+		if (((rc % 4) == 0))
 		{
 			for(i=0;i<8;i++)
 			{
 				set5422VolOut_chain(i,1000);
 			}
 		}
-#endif		
+	
 
 	}
 }
@@ -514,7 +546,7 @@ int main(void)
 	}
 	/*--创建任务--*/
 	/*taskA暂时为数据处理,其优先级暂定为最高*/
-	selfos_create_task(&tcb_task_deal_ins_res, task_deal_ins_res, &task_deal_ins_res_Stk[TASK_DEAL_INSRES_STK_SIZE - 1], 4);
+	selfos_create_task(&tcb_task_deal_cmd, task_deal_cmd, &task_deal_cmd_Stk[TASK_DEAL_CMD_STK_SIZE - 1], 4);
 	selfos_create_task(&taskB, fun_taskb, &taskB_Stk[TASKB_STK_SIZE - 1], 10);
 	selfos_create_task(&taskC, fun_taskc, &taskC_Stk[TASKC_STK_SIZE - 1], 10);
 	/*接收任务的优先级略高一点*/
@@ -534,6 +566,8 @@ int main(void)
 	sem_creat(&sem_uart1rcv, 1, 1);
 	sem_creat(&sem_uart3rcv, 1, 1);
 	sem_creat(&sem_deal_complete, 1, 1);
+	sem_creat(&sem_getadc_result,1,0);
+
 
 	/*--创建内存块----*/
 	rc = creat_mem_pool(&pool_uart1_rcv, buf_mempool_uart1_rcv, LEN_UART1_RCV_MEM, DEEP_UART1_RCV_MEM);
@@ -554,11 +588,19 @@ int main(void)
 		while (1)
 			;
 	}
+	rc = creat_mem_pool(&pool_adc_result, buf_mempool_adc_result, LEN_ADC_RESULT_MEM, DEEP_ADC_RESULT_MEM);
+	if (rc != os_true)
+	{
+		while (1)
+			;
+	}
+
 
 	/*--创建队列----*/
 	queue_creat(&queue_uart1_rcv, queue_mem_uart1_rcv, DEEP_QUEUE_UART1_RCV);
 	queue_creat(&queue_uart3_snd, que_mem_uart3_snd, DEEP_QUE_UART3_SND);
 	queue_creat(&queue_timer2, que_mem_timer2, DEEP_QUE_TIMER2);
+	queue_creat(&queue_adc_result, que_mem_adc_result, DEEP_QUE_ADC_RESULT);
 
 	/*--selfos_start函数必须最后调用,不能被修改位置--*/
 	selfos_start();
