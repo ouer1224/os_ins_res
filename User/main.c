@@ -75,6 +75,10 @@ mem_pool pool_adc_result;
 static uint8_t buf_mempool_adc_result[LEN_ADC_RESULT_MEM * DEEP_ADC_RESULT_MEM];
 
 
+#define LEN_DAC_SET_MEM 32
+#define DEEP_DAC_SET_MEM 1
+mem_pool pool_dac_set;
+static uint8_t buf_mempool_dac_set[LEN_DAC_SET_MEM * DEEP_DAC_SET_MEM];
 
 
 
@@ -96,7 +100,9 @@ QueueCB queue_timer2;
 static uint32_t que_mem_adc_result[DEEP_QUE_ADC_RESULT];
 QueueCB queue_adc_result;
 
-
+#define DEEP_QUE_DAC_SET DEEP_DAC_SET_MEM
+static uint32_t que_mem_dac_set[DEEP_QUE_DAC_SET];
+QueueCB queue_dac_set;
 
 
 
@@ -209,6 +215,8 @@ void fun_taskb(void)
 	uint32_t count = 0;
 	uint32_t i = 0;
 	uint32_t time_now = 0, time_pre = 0;
+	uint32_t dac_set[8+1]={0};
+	uint8_t *pr_send = NULL;
 	msg_out("b run\n");
 	TaskDelay(800);
 
@@ -217,7 +225,7 @@ void fun_taskb(void)
 	{
 		//msg_out("b send sem\n");
 		//sem_release(&testsem);
-
+		rc = (rc+1)%5;
 		//TaskDelay(1000);
 
 		time_now = get_OS_time();
@@ -236,6 +244,27 @@ void fun_taskb(void)
 			//msg_out("No uart1rcv sem\n");
 		}
 		tog_pin_port(LED2);
+
+		TaskDelay(3000);
+
+		for(i=0;i<8;i++)
+		{
+			dac_set[i]=rc*1000;
+		}
+		pr_send=get_mem_from_pool(&pool_dac_set,32);
+		if(pr_send!=NULL)
+		{
+			memcpy(pr_send,dac_set,32);	
+
+			put_dat_to_queue(&queue_dac_set,pr_send,1000,0);
+
+			msg_out("## setdac=%x  %d\n",dac_set[0],dac_set[0]);
+		}
+		else
+		{
+			msg_out("!!!!excep: no mem\n");
+		}
+		
 	}
 }
 
@@ -437,13 +466,13 @@ void task_adc(void)
 #if 1
 		if(which7699==0)
 		{
-			selectWhich7699(0,1);
-			//Select_7699_0();			
+			//selectWhich7699(0,1);
+			Select_7699_0();			
 		}
 		else
 		{
-			selectWhich7699(1,1);
-			//Select_7699_1();		
+			//selectWhich7699(1,1);
+			Select_7699_1();		
 		}
 #else		
 		Select_7699_0();
@@ -489,9 +518,9 @@ void task_adc(void)
 
 			adst = 0;
 		}
-		selectWhich7699(0xff,0);
-		//DisSelect_7699_0();
-		//DisSelect_7699_1();
+		//selectWhich7699(0xff,0);
+		DisSelect_7699_0();
+		DisSelect_7699_1();
 
 
 	
@@ -509,9 +538,12 @@ void task_run(void)
 
 	uint8_t *pr_rcv=NULL;
 	uint32_t adc_buf[8+1]={0};
+	uint32_t dac_set[8+1]={0};
 
 
 	TaskDelay(1000);
+
+	memset(dac_set,0,9*sizeof(uint32_t));
 
 	/*---dac 的spi及IO初始化---*/
 	osassert(init_ad5422_chain());
@@ -547,10 +579,20 @@ void task_run(void)
 		}
 
 		/* dac 输出*/
+		st=get_dat_from_queue(&queue_dac_set,&pr_rcv,0,0);
+		if(st==os_true)
+		{
+			memcpy(dac_set,pr_rcv,8*sizeof(uint32_t));
+			free_mem_to_pool(&pr_rcv);
+			for(j=0;j<8;j++)
+			{
+				msg_out("!!dac_set[%d]=%x\n",j,dac_set[j]);
+			}
+		}
 
 		for(i=0;i<8;i++)
 		{
-			set5422VolOut_chain(i,1000);
+			set5422VolOut_chain(i,dac_set[i]);
 		}
 
 
@@ -642,12 +684,19 @@ int main(void)
 			;
 	}
 
-
+	rc = creat_mem_pool(&pool_dac_set, buf_mempool_dac_set, LEN_DAC_SET_MEM, DEEP_DAC_SET_MEM);
+	if (rc != os_true)
+	{
+		while (1)
+			;
+	}
 	/*--创建队列----*/
 	queue_creat(&queue_uart1_rcv, queue_mem_uart1_rcv, DEEP_QUEUE_UART1_RCV);
 	queue_creat(&queue_uart3_snd, que_mem_uart3_snd, DEEP_QUE_UART3_SND);
 	queue_creat(&queue_timer2, que_mem_timer2, DEEP_QUE_TIMER2);
 	queue_creat(&queue_adc_result, que_mem_adc_result, DEEP_QUE_ADC_RESULT);
+	queue_creat(&queue_dac_set, que_mem_dac_set, DEEP_QUE_DAC_SET);
+
 
 	/*--selfos_start函数必须最后调用,不能被修改位置--*/
 	selfos_start();
