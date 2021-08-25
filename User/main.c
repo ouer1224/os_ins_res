@@ -409,6 +409,9 @@ void task_adc(void)
 
 	uint32_t count=0;
 	uint8_t adst = 0;
+	uint8_t which7699=0;
+
+
 
 	task_sleep(500);
 
@@ -428,58 +431,71 @@ void task_adc(void)
 	{
 		
 		rc++;
-		TaskDelayPeriodic(500, &time_start);
+		//TaskDelayPeriodic(10, &time_start);
+		TaskDelay(5);
 
 /*adc ÊäÈë*/
-		//selectWhich7699(1,1);
+#if 1
+		if(which7699==0)
+		{
+			//selectWhich7699(0,1);
+			Select_7699_0();			
+		}
+		else
+		{
+			//selectWhich7699(1,1);
+			Select_7699_1();		
+		}
+#else		
 		Select_7699_0();
+#endif
 		if (adst == 0)
 		{
 			adst=1;
 			start_conver_ad7699();
+			TaskDelay(10);
 		}
 		if (adst == 1)
 		{
 			count = (count + 1) % 8;
 
 			SPI_RX_BUF[count]=LoopReadVal_7699(count);
+			DisSelect_7699_0();
 			//pos_rx=(pos_rx+1)%8;
+			adc_dat[count]=SPI_RX_BUF[count]* 1.0 / 0xffff * 4096;
 
 			if(count>=7)
 			{
-				
-				//sum=get_filterVal_avr(SPI_RX_BUF,7);
-				//adc_dat[0]=sum;
+				#if 1
+				which7699=(which7699+1)%2;
 				st=sem_acquire(&sem_getadc_result,0);
-				msg_out("==sem_adc=%x\n",st);
 				if(st==os_true)
 				{
 					pr_send=get_mem_from_pool(&pool_adc_result,LEN_ADC_RESULT_MEM);
-					msg_out("pool.free=%x , allocate=%x\n",pool_adc_result.free[0],pool_adc_result.allocated[0]);
 					if(pr_send!=NULL)
 					{
-						memcpy(pr_send,SPI_RX_BUF,32);
+						memcpy(pr_send,adc_dat,32);
 						st=put_dat_to_queue(&queue_adc_result,pr_send,100,0);
-						msg_out("==put_adc_dat==%x\n",st);	
+						msg_out("==put_adc_dat==%x SPI_RX_BUF[0]=%x\n",st,SPI_RX_BUF[0]);	
 					}
 					
 				}	
-
-				
+				#endif
+				msg_out("which7699=%d   rx=%x   v=%d\n", which7699, SPI_RX_BUF[count], (uint32_t)(SPI_RX_BUF[count] * 1.0 / 0xffff * 4096));
 			}
-			msg_out("count=%d   rx=%x   v=%d\n", count, SPI_RX_BUF[count], (uint32_t)(SPI_RX_BUF[count] * 1.0 / 0xffff * 4096));
 
 			adst = 0;
 		}
 		//selectWhich7699(0xff,0);
-		//DisSelect_7699_0();
+		DisSelect_7699_0();
+		DisSelect_7699_1();
 
 /* dac Êä³ö*/
-		if (((rc % 4) == 0))
+		if (((rc % 100) == 0))
 		{
 			for(i=0;i<8;i++)
 			{
-				set5422VolOut_chain(i,1000);
+				//set5422VolOut_chain(i,1000);
 			}
 		}
 	
@@ -492,8 +508,11 @@ void task_run(void)
 
 	uint32_t rc = 0;
 	uint32_t i = 0;
-
+	uint32_t st=0;
 	uint32_t time_start=0;
+
+	uint8_t *pr_rcv=NULL;
+	uint32_t adc_buf[8+1]={0};
 
 
 	TaskDelay(1000);
@@ -503,9 +522,26 @@ void task_run(void)
 		msg_out("task running %d \n", rc);
 		rc++;
 
-		TaskDelayPeriodic(1000, &time_start);		
+		//TaskDelayPeriodic(1000, &time_start);		
+		TaskDelay(1000);
 
-
+		get_dat_from_queue(&queue_adc_result,&pr_rcv,0,0);
+		for(i=0;i<3; i++)
+		{
+			sem_release(&sem_getadc_result);
+			msg_out("\n==read_msg\n");
+			st=get_dat_from_queue(&queue_adc_result,&pr_rcv,3000,0);
+			if(st==os_true)
+			{
+				memcpy(adc_buf,pr_rcv,16);
+				free_mem_to_pool(&pr_rcv);
+				msg_out("\n==dac_res=%x == %d\n",adc_buf[0],adc_buf[0]);
+			}
+			else
+			{
+				//exception
+			}		
+		}
 
 	}
 
