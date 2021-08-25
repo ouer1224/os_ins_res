@@ -461,12 +461,13 @@ void task_adc(void)
 			SPI_RX_BUF[count]=LoopReadVal_7699(count);
 			DisSelect_7699_0();
 			//pos_rx=(pos_rx+1)%8;
-			adc_dat[count]=SPI_RX_BUF[count]* 1.0 / 0xffff * 4096;
+			adc_dat[count]=SPI_RX_BUF[count]>>4;
+			adc_dat[count]|=((uint32_t)which7699)<<31;
 
 			if(count>=7)
 			{
 				#if 1
-				which7699=(which7699+1)%2;
+
 				st=sem_acquire(&sem_getadc_result,0);
 				if(st==os_true)
 				{
@@ -474,13 +475,16 @@ void task_adc(void)
 					if(pr_send!=NULL)
 					{
 						memcpy(pr_send,adc_dat,32);
+						msg_out("==put_adc_dat==%x pr_send[0]=%x\n",st,pr_send[0]);	
 						st=put_dat_to_queue(&queue_adc_result,pr_send,100,0);
-						msg_out("==put_adc_dat==%x SPI_RX_BUF[0]=%x\n",st,SPI_RX_BUF[0]);	
+						
 					}
 					
 				}	
 				#endif
-				msg_out("which7699=%d   rx=%x   v=%d\n", which7699, SPI_RX_BUF[count], (uint32_t)(SPI_RX_BUF[count] * 1.0 / 0xffff * 4096));
+				msg_out("which7699=%d   rx=%x   v=%x\n", which7699, SPI_RX_BUF[0], adc_dat[0]);
+
+				which7699=(which7699+1)%2;
 			}
 
 			adst = 0;
@@ -499,7 +503,7 @@ void task_run(void)
 {
 
 	uint32_t rc = 0;
-	uint32_t i = 0;
+	uint32_t i = 0,j=0;
 	uint32_t st=0;
 	uint32_t time_start=0;
 
@@ -529,9 +533,12 @@ void task_run(void)
 			st=get_dat_from_queue(&queue_adc_result,&pr_rcv,3000,0);
 			if(st==os_true)
 			{
-				memcpy(adc_buf,pr_rcv,16);
+				memcpy(adc_buf,pr_rcv,32);
 				free_mem_to_pool(&pr_rcv);
-				msg_out("\n==dac_res=%x == %d\n",adc_buf[0],adc_buf[0]);
+				for(j=0;j<8;j++)
+				{
+					msg_out("!!getadc_buf[%d]=%x\n",j,adc_buf[j]);
+				}
 			}
 			else
 			{

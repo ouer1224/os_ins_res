@@ -559,6 +559,7 @@ uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	uint8_t *pr_rcv=NULL;
 	uint32_t adc_buf[8+1];
 	uint32_t i=0;
+	uint8_t which7699=0;
 
 	get_dat_from_queue(&queue_adc_result,&pr_rcv,0,0);
 	
@@ -569,9 +570,15 @@ uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 		st=get_dat_from_queue(&queue_adc_result,&pr_rcv,3000,0);
 		if(st==os_true)
 		{
-			memcpy(adc_buf,pr_rcv,16);
+			memcpy(adc_buf,pr_rcv,32);
 			free_mem_to_pool(&pr_rcv);
-			msg_out("dac_res=%d\n",adc_buf[0]);
+
+			which7699=adc_buf[0]>>31;
+			for(i=0;i<8;i++)
+			{
+				adc_buf[0]&=~(0x01<<31);
+			}
+			msg_out("which7699=%d  dac_res=%d\n",which7699,adc_buf[0]);
 		}
 		else
 		{
