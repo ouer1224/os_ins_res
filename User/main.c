@@ -555,8 +555,9 @@ void task_run(void)
 		rc++;
 
 		//TaskDelayPeriodic(1000, &time_start);		
+		
+#if 0
 		TaskDelay(1000);
-
 		get_dat_from_queue(&queue_adc_result,&pr_rcv,0,0);
 		for(i=0;i<3; i++)
 		{
@@ -577,23 +578,24 @@ void task_run(void)
 				//exception
 			}		
 		}
+		#endif
 
 		/* dac Êä³ö*/
-		st=get_dat_from_queue(&queue_dac_set,&pr_rcv,0,0);
+		st=get_dat_from_queue(&queue_dac_set,&pr_rcv,3000,0);
 		if(st==os_true)
 		{
 			memcpy(dac_set,pr_rcv,8*sizeof(uint32_t));
 			free_mem_to_pool(&pr_rcv);
 			for(j=0;j<8;j++)
 			{
-				msg_out("!!dac_set[%d]=%x\n",j,dac_set[j]);
+				msg_out("!!getdac_set[%d]=%x\n",j,dac_set[j]);
 			}
 		}
 
 		for(i=0;i<8;i++)
 		{
 			set5422VolOut_chain(i,dac_set[i]);
-		}
+		}	
 
 
 	}
