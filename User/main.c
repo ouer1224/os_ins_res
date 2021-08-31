@@ -468,13 +468,13 @@ void task_adc(void)
 #if 1
 		if(which7699==0)
 		{
-			//selectWhich7699(0,1);
-			Select_7699_0();			
+			selectWhich7699(0,1);
+			//Select_7699_0();			
 		}
 		else
 		{
-			//selectWhich7699(1,1);
-			Select_7699_1();		
+			selectWhich7699(1,1);
+			//Select_7699_1();		
 		}
 #else		
 		Select_7699_0();
@@ -490,7 +490,6 @@ void task_adc(void)
 			count = (count + 1) % 8;
 
 			SPI_RX_BUF[count]=LoopReadVal_7699(count);
-			DisSelect_7699_0();
 			//pos_rx=(pos_rx+1)%8;
 			adc_dat[count]=SPI_RX_BUF[count]>>4;
 			adc_dat[count]|=((uint32_t)which7699)<<31;
@@ -520,9 +519,9 @@ void task_adc(void)
 
 			adst = 0;
 		}
-		//selectWhich7699(0xff,0);
-		DisSelect_7699_0();
-		DisSelect_7699_1();
+		selectWhich7699(0xff,0);
+		//DisSelect_7699_0();
+		//DisSelect_7699_1();
 
 
 	
