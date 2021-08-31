@@ -25,7 +25,8 @@
 
 extern QueueCB queue_adc_result;
 extern SemCB sem_getadc_result;
-
+extern QueueCB queue_dac_set;
+extern mem_pool pool_dac_set;
 
 
 Msg_res_master s_msg_res_master=
@@ -486,6 +487,9 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	uint32_t localresP=0,localresN=0;
 	uint8_t errcode=1;
 	uint32_t st=0;
+	uint8_t *pr_send = NULL;
+	uint32_t i=0;
+	uint32_t dac_set[9]={0};
 	
 	if(len!=8)
 	{
@@ -494,35 +498,22 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	else
 	{
 
-		pr_dat_vcc=(void *)(buf);
-		pr_dat_gnd=(void *)(buf+4);
-	
-		localresP=getLocalResVcc();
-		localresN=getLocalResGnd();
-	
-		if((*pr_dat_vcc==localresP)&&(*pr_dat_gnd==localresN))
+		for(i=0;i<8;i++)
 		{
-			errcode=0;
+			dac_set[i]=i*100+1000;
+		}
+		pr_send=get_mem_from_pool(&pool_dac_set,32);
+		if(pr_send!=NULL)
+		{
+			memcpy(pr_send,dac_set,32);	
+
+			put_dat_to_queue(&queue_dac_set,pr_send,1000,0);
+
+			msg_out("## setdac=%x  %d\n",dac_set[0],dac_set[0]);
 		}
 		else
 		{
-	
-			Pinput=getCombinationRes(*pr_dat_vcc);
-			Ninput=getCombinationRes(*pr_dat_gnd);
-			Plocal=getCombinationRes(localresP);
-			Nlocal=getCombinationRes(localresN);
-	
-			st=selectInsRes(Pinput,Ninput,Plocal,Nlocal);
-			if(st==FUN_OK)
-			{
-				errcode=0;
-				setLocalResVcc(*pr_dat_vcc);
-				setLocalResGnd(*pr_dat_gnd);
-			}
-
-			msg_out("Pinput=%x Plocal=%x\n",Pinput,Plocal);
-			msg_out("Ninput=%x Nlocal=%x\n",Ninput,Nlocal);
-	
+			msg_out("!!!!excep: no mem\n");
 		}
 
 	}

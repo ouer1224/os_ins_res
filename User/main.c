@@ -245,6 +245,7 @@ void fun_taskb(void)
 		}
 		tog_pin_port(LED2);
 
+#if 0
 		TaskDelay(3000);
 
 		for(i=0;i<8;i++)
@@ -264,6 +265,7 @@ void fun_taskb(void)
 		{
 			msg_out("!!!!excep: no mem\n");
 		}
+#endif		
 		
 	}
 }
@@ -549,6 +551,8 @@ void task_run(void)
 	osassert(init_ad5422_chain());
 
 	GetStartDelayTime(&time_start);
+
+
 	for(;;)
 	{
 		msg_out("task running %d \n", rc);
@@ -581,7 +585,7 @@ void task_run(void)
 		#endif
 
 		/* dac Êä³ö*/
-		st=get_dat_from_queue(&queue_dac_set,&pr_rcv,3000,0);
+		st=get_dat_from_queue(&queue_dac_set,&pr_rcv,2000,0);
 		if(st==os_true)
 		{
 			memcpy(dac_set,pr_rcv,8*sizeof(uint32_t));
@@ -592,9 +596,11 @@ void task_run(void)
 			}
 		}
 
+		j= rc%51*100;
+		msg_out("!!setdac==%d rc=%d\n",j,rc);
 		for(i=0;i<8;i++)
 		{
-			set5422VolOut_chain(i,dac_set[i]);
+			set5422VolOut_chain(i,j);
 		}	
 
 

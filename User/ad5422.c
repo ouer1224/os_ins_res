@@ -193,6 +193,7 @@ fnDri uint8_t init_ad5422_chain(void)
 
 	TaskDelay(2);
 
+
 	//配置为 菊花链
 	for (i = 0; i < numofad542; i++)
 	{
@@ -200,11 +201,27 @@ fnDri uint8_t init_ad5422_chain(void)
 		memset(datChain, 0, 3);
 
 		datChain[0] = 0x55;
-		datChain[1] = 0x31;
-		datChain[2] = 0x00 | (0x01 << 3);
+		datChain[1] = 0x33;//0x31;
+		datChain[2] = 0xf0 | (0x01 << 3);
 		//! 似乎只能 one by one 的进行配置.因为只有第1个配置后,才能传输数据给第2个.
 		AD5410xWriteReg_chain(i,datChain[0],(datChain[1]<<8)|(datChain[2]));
 	}
+	TaskDelay(2);
+	AD5410xSoftReset();		
+	TaskDelay(2);
+	//配置为 菊花链
+	for (i = 0; i < numofad542; i++)
+	{
+
+		memset(datChain, 0, 3);
+
+		datChain[0] = 0x55;
+		datChain[1] = 0x33;//0x31;
+		datChain[2] = 0xf0 | (0x01 << 3);
+		//! 似乎只能 one by one 的进行配置.因为只有第1个配置后,才能传输数据给第2个.
+		AD5410xWriteReg_chain(i,datChain[0],(datChain[1]<<8)|(datChain[2]));
+	}
+
 
 	return 1;
 }
@@ -221,7 +238,7 @@ fnDri uint8_t set5422VolOut_chain(uint8_t id,uint32_t vol)
 
 	datChain[0] = 0x01;
 
-	i= (0xffff/6000.0*vol);
+	i= (0xffff*vol/5960.0);
 
 	datChain[1] = (i >> 8)&0xff;
 	datChain[2] = i &0xff;
