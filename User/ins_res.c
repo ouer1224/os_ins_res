@@ -491,17 +491,26 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	uint32_t i=0;
 	uint32_t dac_set[9]={0};
 	
-	if(len!=8)
+	if(len!=32)
 	{
 		errcode=1;
+		msg_out("!!!!excep: len err\n");
 	}
 	else
 	{
-
+#if 0
 		for(i=0;i<8;i++)
 		{
 			dac_set[i]=i*100+1000;
 		}
+#endif
+		memcpy(dac_set,buf,len);
+
+		for(i=0;i<8;i++)
+		{
+			msg_out("### pcset=%d \n",dac_set[i]);
+		}
+
 		pr_send=get_mem_from_pool(&pool_dac_set,32);
 		if(pr_send!=NULL)
 		{
@@ -517,6 +526,7 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 		}
 
 	}
+
 	
 	pr=(void *)(s_buf_write+0);
 	*pr=errcode;

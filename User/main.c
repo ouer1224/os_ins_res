@@ -596,11 +596,11 @@ void task_run(void)
 			}
 		}
 
-		j= rc%51*100;
-		msg_out("!!setdac==%d rc=%d\n",j,rc);
+		//j= rc%51*100;
+		//msg_out("!!setdac==%d rc=%d\n",j,rc);
 		for(i=0;i<8;i++)
 		{
-			set5422VolOut_chain(i,j);
+			set5422VolOut_chain(i,dac_set[i]);
 		}	
 
 
