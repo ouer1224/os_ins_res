@@ -570,46 +570,60 @@ uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	uint32_t *pr=NULL;
 	uint32_t st=0;
 	uint8_t *pr_rcv=NULL;
-	uint32_t adc_buf[8+1];
-	uint32_t i=0;
+	uint32_t adc_buf[8+1]={0};
+	uint32_t get_adc[16]={0};
+	uint32_t i=0,j=0;
 	uint8_t which7699=0;
+	uint32_t errcode=0;
 
-	get_dat_from_queue(&queue_adc_result,&pr_rcv,0,0);
-	
-	for(i=0;i<3; i++)
+	if(len!=0)
 	{
-		sem_release(&sem_getadc_result);
-		msg_out("==read_msg\n");
-		st=get_dat_from_queue(&queue_adc_result,&pr_rcv,3000,0);
-		if(st==os_true)
-		{
-			memcpy(adc_buf,pr_rcv,32);
-			free_mem_to_pool(&pr_rcv);
-
-			which7699=adc_buf[0]>>31;
-			for(i=0;i<8;i++)
-			{
-				adc_buf[0]&=~(0x01<<31);
-			}
-			msg_out("which7699=%d  dac_res=%d\n",which7699,adc_buf[0]);
-		}
-		else
-		{
-			//exception
-		}		
+		errcode=1;
 	}
-	
+
+	if(errcode==0)
+	{
+		get_dat_from_queue(&queue_adc_result,&pr_rcv,0,0);
+		
+		for(j=0;j<3; j++)
+		{
+			sem_release(&sem_getadc_result);
+			msg_out("==read_msg=%d\n",j);
+			st=get_dat_from_queue(&queue_adc_result,&pr_rcv,3000,0);
+			if(st==os_true)
+			{
+				memcpy(adc_buf,pr_rcv,32);
+				free_mem_to_pool(&pr_rcv);
+
+				which7699=adc_buf[0]>>31;
+				for(i=0;i<8;i++)
+				{
+					adc_buf[i]&=~(0x01<<31);
+				}
+				msg_out("==which7699=%d  dac_res=%d\n",which7699,adc_buf[0]);
+
+				memcpy(get_adc+which7699*8,adc_buf,32);
+			}
+			else
+			{
+				//exception
+			}		
+		}
+	}
+	else
+	{
+		msg_out("!!!except: errcode=%d\n",errcode);
+	}
 
 
 	pr=(void *)(s_buf_write+0);
-	*pr=0;
-	pr=(void *)(s_buf_write+4);
-	*pr=getLocalResVcc();
-	pr=(void *)(s_buf_write+8);
-	*pr=getLocalResGnd();
+	*pr=errcode;
 
+	pr++;
 
-	msg->msg_head.len=32;
+	memcpy(pr,get_adc,64);
+
+	msg->msg_head.len=68;
 	msg->msg_head.adress_dest=ADRESS_MASTER;
 	msg->msg_head.funcode=CMD_MASTER_READ;
 	msg->msg_head.head='$';
