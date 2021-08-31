@@ -476,7 +476,7 @@ uint32_t handle_inquire_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	return FUN_OK;
 }
 
-static uint8_t s_buf_write[12];
+static uint8_t s_buf_write[36];
 
 uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 {
@@ -485,7 +485,7 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	uint32_t *pr=NULL;
 	uint32_t Pinput=0,Ninput=0,Plocal=0,Nlocal=0;	
 	uint32_t localresP=0,localresN=0;
-	uint8_t errcode=1;
+	uint8_t errcode=0;
 	uint32_t st=0;
 	uint8_t *pr_send = NULL;
 	uint32_t i=0;
@@ -509,8 +509,14 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 		for(i=0;i<8;i++)
 		{
 			msg_out("### pcset=%d \n",dac_set[i]);
+			if(dac_set[i]>6000)
+			{
+				errcode=2;
+			}
 		}
-
+	}
+	if(errcode==0)
+	{
 		pr_send=get_mem_from_pool(&pool_dac_set,32);
 		if(pr_send!=NULL)
 		{
@@ -523,19 +529,25 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 		else
 		{
 			msg_out("!!!!excep: no mem\n");
-		}
-
+		}		
+	}
+	else
+	{
+		msg_out("!!!except: errcode=%d\n",errcode);
 	}
 
 	
 	pr=(void *)(s_buf_write+0);
 	*pr=errcode;
-	pr=(void *)(s_buf_write+4);
-	*pr=getLocalResVcc();
-	pr=(void *)(s_buf_write+8);
-	*pr=getLocalResGnd();
 
-	msg->msg_head.len=12;
+	pr++;
+
+	for(i=0;i<32;i++)
+	{
+		memcpy(pr,buf,32);
+	}
+
+	msg->msg_head.len=36;
 	msg->msg_head.adress_dest=ADRESS_MASTER;
 	msg->msg_head.funcode=CMD_MASTER_WRITE;
 	msg->msg_head.head='$';
