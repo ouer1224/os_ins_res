@@ -627,7 +627,24 @@ TaskDelay(1);
 		{
 			st=rc%51;
 			st=st*100;
-			st= 0xffff*st/5971.0;
+			if(st<=700)
+			{
+				st= 0xffff*(st+33)/5950.0;
+			}
+			else if(st>3000)
+			{
+				st= 0xffff*(st-5)/5950.0;
+			}
+			else if(st>1300)
+			{
+				st= 0xffff*(st+5)/5950.0;				
+			}
+			else
+			{
+				st= 0xffff*(st+16)/5950.0;
+			}
+			
+			//st=0xffff;
 			memset(datChain, 0, 24);
 			datChain[0][0] = 0x01;
 			datChain[0][1] = (st) >> 8;
