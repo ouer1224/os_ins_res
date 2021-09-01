@@ -401,6 +401,8 @@ void task_run(void)
 
 	uint8_t datChain[8][3];
 
+	uint32_t st=0;
+
 	task_sleep(500);
 
 	/*---adc µÄspi³õÊ¼»¯---*/
@@ -621,20 +623,22 @@ TaskDelay(1);
 		}
 #else
 
-		if ((rc % 4) == 0)
+		//if ((rc % 4) == 0)
 		{
-
+			st=rc%51;
+			st=st*100;
+			st= 0xffff*st/5971.0;
 			memset(datChain, 0, 24);
 			datChain[0][0] = 0x01;
-			datChain[0][1] = (0xffff / 6*1) >> 8;
-			datChain[0][2] = 0xffff / 6*1;
+			datChain[0][1] = (st) >> 8;
+			datChain[0][2] = st;
 
 			for(i=0;i<8;i++)
 			{
 				AD5410xWriteReg_chain(i,datChain[0][0],(datChain[0][1]<<8)|(datChain[0][2]));
 			}
 		}
-		#if 1
+		#if 0
 		else if ((rc % 4) == 1)
 		{
 			memset(datChain, 0, 24);
