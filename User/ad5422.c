@@ -237,22 +237,10 @@ fnDri uint8_t set5422VolOut_chain(uint8_t id,uint32_t vol)
 
 	datChain[0] = 0x01;
 
-
-	if(vol<=700)
+	vol = 0xffff*(vol+0)/5950;
+	if(vol<=2500)
 	{
-		vol= 0xffff*(vol+33)/5950.0;
-	}
-	else if(vol>3000)
-	{
-		vol= 0xffff*(vol-5)/5950.0;
-	}
-	else if(vol>1300)
-	{
-		vol= 0xffff*(vol+5)/5950.0;				
-	}
-	else
-	{
-		vol= 0xffff*(vol+16)/5950.0;
+		vol= (10-vol*10/2500) + vol;
 	}
 
 	datChain[1] = (vol >> 8)&0xff;
