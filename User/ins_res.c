@@ -179,59 +179,111 @@ uint32_t closeRelayGroup(uint8_t dat,uint32_t group)
 	(dat>>6)&0x01?SetPinOutput(Pin_DB6,1):0;
 	(dat>>7)&0x01?SetPinOutput(Pin_DB7,1):0;
 
+	SetPinOutput(group,0);
+
+	TaskDelay(1);
+
 	SetPinOutput(group,1);
 
-	for(i=0;i<0xff;i++)
-	{
-	}
+	msg_out("## group=%x dat=%x portb=%x\n",group,dat,GPIOB->ODR);
+
+	TaskDelay(2);
 	
 	SetPinOutput(group,0);
 
+	msg_out(" group=%x portb=%x\n",group,GPIOB->ODR);		
 
 	return FUN_OK;
 }
 
 
 
-uint32_t OpenSelectPosRelay(uint32_t opendat)
+uint32_t OpenSelectPosRelay(uint8_t channel,uint32_t opendat)
 {
+	if(channel==0)
+	{
+		openRelayGroup((opendat>>0)&0xff,(uint32_t)Lock_Pos_Relay_1);		
+	}	
+	else if(channel==1)
+	{
+		openRelayGroup((opendat>>8)&0xff,(uint32_t)Lock_Pos_Relay_2);	
+	}
+	else if(channel==2)
+	{
+		openRelayGroup((opendat>>16)&0xff,(uint32_t)Lock_Pos_Relay_3);
+	}
+	else
+	{
+		exception("OpenSelectPosRelay: channel err\n");
+	}
 	
-	openRelayGroup((opendat>>0)&0xff,(uint32_t)Lock_Pos_Relay_1);
-	openRelayGroup((opendat>>8)&0xff,(uint32_t)Lock_Pos_Relay_2);
-	openRelayGroup((opendat>>16)&0xff,(uint32_t)Lock_Pos_Relay_3);
 
 	return FUN_OK;
 }
 
-uint32_t OpenSelectNegRelay(uint32_t opendat)
+uint32_t OpenSelectNegRelay(uint8_t channel,uint32_t opendat)
 {
-	
-	openRelayGroup((opendat>>0)&0xff,(uint32_t)Lock_Neg_Relay_1);
-	openRelayGroup((opendat>>8)&0xff,(uint32_t)Lock_Neg_Relay_2);
-	openRelayGroup((opendat>>16)&0xff,(uint32_t)Lock_Neg_Relay_3);
-
+	if(channel==0)
+	{
+		openRelayGroup((opendat>>0)&0xff,(uint32_t)Lock_Neg_Relay_1);		
+	}	
+	else if(channel==1)
+	{
+		openRelayGroup((opendat>>8)&0xff,(uint32_t)Lock_Neg_Relay_2);	
+	}
+	else if(channel==2)
+	{
+		openRelayGroup((opendat>>16)&0xff,(uint32_t)Lock_Neg_Relay_3);
+	}
+	else
+	{
+		exception("OpenSelectNegRelay: channel err\n");
+	}
 	return FUN_OK;
 }
 
 
 
-uint32_t CloseSelectPosRelay(uint32_t closedat)
+uint32_t CloseSelectPosRelay(uint8_t channel,uint32_t closedat)
 {
-	
-	closeRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Pos_Relay_1);
-	closeRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Pos_Relay_2);
-	closeRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Pos_Relay_3);
+	if(channel==0)
+	{
+		closeRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Pos_Relay_1);		
+	}	
+	else if(channel==1)
+	{
+		closeRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Pos_Relay_2);	
+	}
+	else if(channel==2)
+	{
+		closeRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Pos_Relay_3);
+	}
+	else
+	{
+		exception("CloseSelectPosRelay: channel err\n");
+	}	
 
 	return FUN_OK;
 }
 
-uint32_t CloseSelectNegRelay(uint32_t closedat)
+uint32_t CloseSelectNegRelay(uint8_t channel,uint32_t closedat)
 {
-	
-	closeRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Neg_Relay_1);
-	closeRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Neg_Relay_2);
-	closeRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Neg_Relay_3);
-
+	if(channel==0)
+	{
+		closeRelayGroup((closedat>>0)&0xff,(uint32_t)Lock_Neg_Relay_1);		
+	}	
+	else if(channel==1)
+	{
+		closeRelayGroup((closedat>>8)&0xff,(uint32_t)Lock_Neg_Relay_2);	
+	}
+	else if(channel==2)
+	{
+		closeRelayGroup((closedat>>16)&0xff,(uint32_t)Lock_Neg_Relay_3);
+	}
+	else
+	{
+		exception("CloseSelectNegRelay: channel err\n");
+	}	
 	return FUN_OK;
 }
 
@@ -266,16 +318,27 @@ uint32_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t N
 	closedat=Pinput;
 
 	msg_out("OB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
-	OpenSelectPosRelay(opendat);
-	CloseSelectPosRelay(closedat);
+	OpenSelectPosRelay(0,opendat);
+	CloseSelectPosRelay(0,closedat);
+	OpenSelectPosRelay(1,opendat);
+	CloseSelectPosRelay(1,closedat);
+	OpenSelectPosRelay(2,opendat);
+	CloseSelectPosRelay(2,closedat);
 
+	msg_out("ps_open=%x close=%x\n",opendat,closedat);
 	msg_out("PB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
 
 
 	opendat=~Ninput;
 	closedat=Ninput;
-	OpenSelectNegRelay(opendat);
-	CloseSelectNegRelay(closedat);
+	OpenSelectNegRelay(0,opendat);
+	CloseSelectNegRelay(0,closedat);
+	OpenSelectNegRelay(1,opendat);
+	CloseSelectNegRelay(1,closedat);
+	OpenSelectNegRelay(2,opendat);
+	CloseSelectNegRelay(2,closedat);
+
+	msg_out("ne_open=%x close=%x\n",opendat,closedat);
 	msg_out("NB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
 
 
@@ -494,7 +557,8 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 		localresP=getLocalResVcc();
 		localresN=getLocalResGnd();
 	
-		if((*pr_dat_vcc==localresP)&&(*pr_dat_gnd==localresN))
+		//if((*pr_dat_vcc==localresP)&&(*pr_dat_gnd==localresN))
+		if(0)
 		{
 			errcode=0;
 		}

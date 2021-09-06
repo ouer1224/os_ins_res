@@ -16,5 +16,6 @@ uint32_t os_printf(uint8_t *str , ...);
 
 
 #define msg_out	os_printf
+#define exception os_printf
 
 #endif

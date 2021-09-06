@@ -145,14 +145,14 @@
 
 
 
-#define Lock_Neg_Relay_1	PORTA_P3
-#define Lock_Neg_Relay_2	PORTA_P2
-#define Lock_Neg_Relay_3	PORTA_P1
+#define Lock_Neg_Relay_1	(PORTA_P3)
+#define Lock_Neg_Relay_2	(PORTA_P2)
+#define Lock_Neg_Relay_3	(PORTA_P1)
 
 
-#define Lock_Pos_Relay_1	PORTB_P14
-#define Lock_Pos_Relay_2	PORTB_P13
-#define Lock_Pos_Relay_3	PORTB_P12
+#define Lock_Pos_Relay_1	(PORTB_P14)
+#define Lock_Pos_Relay_2	(PORTB_P13)
+#define Lock_Pos_Relay_3	(PORTB_P12)
 
 
 #define Pin_DB0				PORTB_P1
