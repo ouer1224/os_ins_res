@@ -533,7 +533,7 @@ uint32_t handle_inquire_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 }
 
 static uint8_t s_buf_write[12];
-
+#define ALL_INS_SUM		111111100
 uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 {
 	uint32_t *pr_dat_vcc=NULL;
@@ -565,10 +565,10 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 		else
 		{
 	
-			Pinput=getCombinationRes(*pr_dat_vcc);
-			Ninput=getCombinationRes(*pr_dat_gnd);
-			Plocal=getCombinationRes(localresP);
-			Nlocal=getCombinationRes(localresN);
+			Pinput=getCombinationRes(ALL_INS_SUM-*pr_dat_vcc);
+			Ninput=getCombinationRes(ALL_INS_SUM-*pr_dat_gnd);
+			Plocal=getCombinationRes(ALL_INS_SUM-localresP);
+			Nlocal=getCombinationRes(ALL_INS_SUM-localresN);
 	
 			st=selectInsRes(Pinput,Ninput,Plocal,Nlocal);
 			if(st==FUN_OK)
