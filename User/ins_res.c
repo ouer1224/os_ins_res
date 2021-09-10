@@ -31,7 +31,7 @@ extern mem_pool pool_dac_set;
 
 Msg_res_master s_msg_res_master=
 {
-	'$','Q','0',0,
+	'$','Q','0',0,Adress_Ins_Res,
 	null,
 	0x00,0x0d0a
 };
@@ -431,10 +431,17 @@ uint32_t send_msg_res(Msg_res_master * msg)
 	{	
 		return FUN_ERR;
 	}	
-
-	len=sizeof(msg->msg_head);
-	pr=(void *)&(msg->msg_head);
-
+	
+	if(msg->msg_head.funcode==CMD_MASTER_INQUIRE)
+	{
+		len=sizeof(msg->msg_head);
+		pr=(void *)&(msg->msg_head);
+	}
+	else
+	{
+		len=sizeof(msg->msg_head)-1;
+		pr=(void *)&(msg->msg_head);
+	}
 	send_master_dat(pr,len);
 
 
@@ -468,6 +475,18 @@ uint32_t cal_checksum(uint8_t *buf,uint32_t len)
 
 	return check;
 }
+uint32_t cal_checksum_s(Msg_res_master *msg)
+{
+	uint32_t check=0;
+	uint32_t i=0;
+	check=msg->msg_head.head+msg->msg_head.funcode+msg->msg_head.adress_dest+msg->msg_head.len;
+	for(i=0;i<msg->msg_head.len;i++)
+	{
+		check+=((uint8_t*)(msg->pr))[i];
+	}
+
+	return check;
+}
 
 static uint8_t s_dat_init[12];
 uint32_t handle_init_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
@@ -493,7 +512,7 @@ uint32_t handle_init_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	send_master_dat(buf,len);
 
 	
-	i=cal_checksum(buf,len);
+	i=cal_checksum(buf,len+3);
 	i+=s_dat_init[4];
 	i+=s_dat_init[5];
 	i+=s_dat_init[6];
@@ -525,12 +544,12 @@ uint32_t handle_inquire_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	msg->msg_head.adress_dest=ADRESS_MASTER;
 	msg->msg_head.funcode=CMD_MASTER_INQUIRE;
 	msg->msg_head.head='$';
-
+	msg->msg_head.address_local=Adress_Ins_Res;
 	msg->msg_tail.tail=0x0a0d;
 
 	msg->pr=s_dat_inquire;
 
-	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
+	msg->msg_tail.check=cal_checksum_s(msg)%0xffff;
 
 	send_msg_res(msg);
 	return FUN_OK;
@@ -564,7 +583,7 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 			dac_set[i]=i*100+1000;
 		}
 #endif
-		memcpy(dac_set,buf,len);
+		memcpy(dac_set,buf+4,len);
 
 		for(i=0;i<8;i++)
 		{
@@ -602,10 +621,8 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 
 	pr++;
 
-	for(i=0;i<32;i++)
-	{
-		memcpy(pr,buf,32);
-	}
+	memcpy(pr,buf+4,32);
+
 
 	msg->msg_head.len=36;
 	msg->msg_head.adress_dest=ADRESS_MASTER;
@@ -616,7 +633,7 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 
 	msg->pr=s_buf_write;
 
-	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
+	msg->msg_tail.check=cal_checksum_s(msg)%0xffff;
 
 	send_msg_res(msg);
 
@@ -692,7 +709,7 @@ uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 
 	msg->pr=s_buf_write;
 
-	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
+	msg->msg_tail.check=cal_checksum_s(msg)%0xffff;
 
 	send_msg_res(msg);
 
@@ -756,7 +773,8 @@ uint32_t deal_master_cmd(uint8_t *buf)
 
 
 
-	rc=judge_checkSum(buf+Pos_Len+1,len,check);
+	//rc=judge_checkSum(buf+Pos_Len+1,len,check);
+  	rc=judge_checkSum(buf,len+3,check);
 	if(rc!=FUN_OK)
 	{
 		msg_out("\ncheck err\n");
@@ -769,27 +787,29 @@ uint32_t deal_master_cmd(uint8_t *buf)
 	{
 		case CMD_MASTER_INIT:
 		{
-			handle_init_msg(buf+Pos_Len+1,len,&s_msg_res_master);
+			//handle_init_msg(buf+Pos_Len+1,len,&s_msg_res_master);
+			handle_init_msg(buf,len,&s_msg_res_master);
 		}
 		break;
 
 		case CMD_MASTER_INQUIRE:
 		{
-			handle_inquire_msg(buf+Pos_Len+1,len,&s_msg_res_master);
+			//handle_inquire_msg(buf+Pos_Len+1,len,&s_msg_res_master);
+			handle_inquire_msg(buf,len,&s_msg_res_master);
 		}
 		break;
 
 		case CMD_MASTER_READ:
 		{
-			// msg_out("#dealReadStart=%d\n",get_OS_sys_count());
-			handle_read_msg(buf+Pos_Len+1,len,&s_msg_res_master);
+			//handle_read_msg(buf+Pos_Len+1,len,&s_msg_res_master);
+			handle_read_msg(buf,len,&s_msg_res_master);
 		}
 		break;
 
 		case CMD_MASTER_WRITE:
 		{
-			// msg_out("#dealWriteStart=%d\n",get_OS_sys_count());
-			handle_write_msg(buf+Pos_Len+1,len,&s_msg_res_master);
+			//handle_write_msg(buf+Pos_Len+1,len,&s_msg_res_master);
+			handle_write_msg(buf,len,&s_msg_res_master);
 		}
 		break;
 

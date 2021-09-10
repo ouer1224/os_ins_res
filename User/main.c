@@ -527,7 +527,7 @@ void task_adc(void)
 					
 				}	
 				#endif
-				msg_out("which7699=%d   rx=%x   v=%d\n", which7699, SPI_RX_BUF[0], adc_dat[0]&(~(0x01<<31)));
+				// msg_out("which7699=%d   rx=%x   v=%d\n", which7699, SPI_RX_BUF[0], adc_dat[0]&(~(0x01<<31)));
 
 				which7699=(which7699+1)%2;
 			}

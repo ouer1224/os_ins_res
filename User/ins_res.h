@@ -22,7 +22,7 @@
 #define null	((void *)0)
 #endif
 
-
+#define Adress_Ins_Res		'1'
 
 #define comUartPort		1
 
@@ -178,6 +178,7 @@ typedef struct
 	uint8_t funcode;
 	uint8_t adress_dest;
 	uint8_t len;
+	uint8_t address_local;
 
 }Msg_res_head;
 
