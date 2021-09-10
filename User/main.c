@@ -143,7 +143,7 @@ void task_deal_ins_res(void)
 	uint32_t i = 0;
 	uint8_t *pr_rcv = NULL;
 	uint32_t len = 0;
-	uint8_t buf[48] = 0;
+	uint8_t buf[48] = {0};
 	uint8_t *pr = buf;
 	uint8_t j=0;
 	uint8_t rcvend=0;
