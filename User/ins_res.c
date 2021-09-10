@@ -149,7 +149,7 @@ uint32_t openRelayGroup(uint8_t dat,uint32_t group)
 
 	SetPinOutput(group,1);
 
-	for(i=0;i<0xff;i++)
+	for(i=0;i<0x7ff;i++)
 	{
 	}
 	
@@ -179,19 +179,16 @@ uint32_t closeRelayGroup(uint8_t dat,uint32_t group)
 	(dat>>6)&0x01?SetPinOutput(Pin_DB6,1):0;
 	(dat>>7)&0x01?SetPinOutput(Pin_DB7,1):0;
 
-	SetPinOutput(group,0);
-
-	TaskDelay(1);
-
 	SetPinOutput(group,1);
 
-	msg_out("## group=%x dat=%x portb=%x\n",group,dat,GPIOB->ODR);
-
-	TaskDelay(2);
+	for(i=0;i<0x7ff;i++)
+	{
+	}
 	
 	SetPinOutput(group,0);
 
-	msg_out(" group=%x portb=%x\n",group,GPIOB->ODR);		
+
+	// msg_out(" group=%x portb=%x\n",group,GPIOB->ODR);		
 
 	return FUN_OK;
 }
@@ -317,7 +314,7 @@ uint32_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t N
 	opendat=~Pinput;
 	closedat=Pinput;
 
-	msg_out("OB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
+	// msg_out("OB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
 	OpenSelectPosRelay(0,opendat);
 	CloseSelectPosRelay(0,closedat);
 	OpenSelectPosRelay(1,opendat);
@@ -325,8 +322,8 @@ uint32_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t N
 	OpenSelectPosRelay(2,opendat);
 	CloseSelectPosRelay(2,closedat);
 
-	msg_out("ps_open=%x close=%x\n",opendat,closedat);
-	msg_out("PB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
+	// msg_out("ps_open=%x close=%x\n",opendat,closedat);
+	// msg_out("PB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
 
 
 	opendat=~Ninput;
@@ -338,8 +335,8 @@ uint32_t selectInsRes(uint32_t Pinput,uint32_t Ninput,uint32_t Plocal,uint32_t N
 	OpenSelectNegRelay(2,opendat);
 	CloseSelectNegRelay(2,closedat);
 
-	msg_out("ne_open=%x close=%x\n",opendat,closedat);
-	msg_out("NB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
+	// msg_out("ne_open=%x close=%x\n",opendat,closedat);
+	// msg_out("NB->ODR=%x C->ODR=%x\n",GPIOB->ODR,GPIOC->ODR);
 
 
 #endif
@@ -543,7 +540,107 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 	uint32_t localresP=0,localresN=0;
 	uint8_t errcode=1;
 	uint32_t st=0;
+
+	// msg_out("###dealWriteEnd00=%d\n",get_OS_sys_count());
+
+#if 1
+	if(len!=8)
+	{
+		errcode=1;
+	}
+	else
+	{
+
+		pr_dat_vcc=(void *)(buf);
+		pr_dat_gnd=(void *)(buf+4);
 	
+		localresP=getLocalResVcc();
+		localresN=getLocalResGnd();
+		// msg_out("#__dealWriteEnd11=%d\n",get_OS_sys_count());
+		//if((*pr_dat_vcc==localresP)&&(*pr_dat_gnd==localresN))
+		if(0)
+		{
+			errcode=0;
+		}
+		else
+		{
+	
+			Pinput=getCombinationRes(ALL_INS_SUM-*pr_dat_vcc);
+			Ninput=getCombinationRes(ALL_INS_SUM-*pr_dat_gnd);
+			Plocal=getCombinationRes(ALL_INS_SUM-localresP);
+			Nlocal=getCombinationRes(ALL_INS_SUM-localresN);
+			// msg_out("#__dealWriteEnd222=%d\n",get_OS_sys_count());
+			st=selectInsRes(Pinput,Ninput,Plocal,Nlocal);
+			// msg_out("#__dealWriteEnd333=%d\n",get_OS_sys_count());
+			if(st==FUN_OK)
+			{
+				errcode=0;
+				setLocalResVcc(*pr_dat_vcc);
+				// msg_out("#__dealWriteEnd444=%d\n",get_OS_sys_count());
+				setLocalResGnd(*pr_dat_gnd);
+			}
+			// msg_out("#__dealWriteEnd555=%d\n",get_OS_sys_count());
+			// msg_out("Pinput=%x Plocal=%x\n",Pinput,Plocal);
+			// msg_out("Ninput=%x Nlocal=%x\n",Ninput,Nlocal);
+	
+		}
+
+	}
+	
+	pr=(void *)(s_buf_write+0);
+	*pr=errcode;
+	pr=(void *)(s_buf_write+4);
+	*pr=getLocalResVcc();
+	pr=(void *)(s_buf_write+8);
+	*pr=getLocalResGnd();
+
+	msg->msg_head.len=12;
+	msg->msg_head.adress_dest=ADRESS_MASTER;
+	msg->msg_head.funcode=CMD_MASTER_WRITE;
+	msg->msg_head.head='$';
+
+	msg->msg_tail.tail=0x0a0d;
+
+	msg->pr=s_buf_write;
+
+	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
+
+	send_msg_res(msg);
+
+	msg_out("#__dealWriteEnd=%d\n",get_OS_sys_count());
+#else	
+
+	if(len!=8)
+	{
+		errcode=1;
+	}
+	else
+	{
+		errcode=0;
+	}
+
+	pr=(void *)(s_buf_write+0);
+	*pr=errcode;
+	pr=(void *)(s_buf_write+4);
+	*pr=getLocalResVcc();
+	pr=(void *)(s_buf_write+8);
+	*pr=getLocalResGnd();
+
+	msg->msg_head.len=12;
+	msg->msg_head.adress_dest=ADRESS_MASTER;
+	msg->msg_head.funcode=CMD_MASTER_WRITE;
+	msg->msg_head.head='$';
+
+	msg->msg_tail.tail=0x0a0d;
+
+	msg->pr=s_buf_write;
+
+	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
+
+	send_msg_res(msg);
+
+	msg_out("#dealWriteEnd=%d\n",get_OS_sys_count());
+
 	if(len!=8)
 	{
 		errcode=1;
@@ -584,28 +681,8 @@ uint32_t handle_write_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 		}
 
 	}
-	
-	pr=(void *)(s_buf_write+0);
-	*pr=errcode;
-	pr=(void *)(s_buf_write+4);
-	*pr=getLocalResVcc();
-	pr=(void *)(s_buf_write+8);
-	*pr=getLocalResGnd();
 
-	msg->msg_head.len=12;
-	msg->msg_head.adress_dest=ADRESS_MASTER;
-	msg->msg_head.funcode=CMD_MASTER_WRITE;
-	msg->msg_head.head='$';
-
-	msg->msg_tail.tail=0x0a0d;
-
-	msg->pr=s_buf_write;
-
-	msg->msg_tail.check=cal_checksum(msg->pr,msg->msg_head.len)%0xffff;
-
-	send_msg_res(msg);
-
-
+#endif	
 	return FUN_OK;
 }
 
@@ -636,6 +713,7 @@ uint32_t handle_read_msg(uint8_t *buf,uint32_t len,Msg_res_master *msg)
 
 	send_msg_res(msg);
 
+	msg_out("#dealReadEnd=%d\n",get_OS_sys_count());
 
 	return FUN_OK;
 }
@@ -720,12 +798,14 @@ uint32_t deal_master_cmd(uint8_t *buf)
 
 		case CMD_MASTER_READ:
 		{
+			// msg_out("#dealReadStart=%d\n",get_OS_sys_count());
 			handle_read_msg(buf+Pos_Len+1,len,&s_msg_res_master);
 		}
 		break;
 
 		case CMD_MASTER_WRITE:
 		{
+			// msg_out("#dealWriteStart=%d\n",get_OS_sys_count());
 			handle_write_msg(buf+Pos_Len+1,len,&s_msg_res_master);
 		}
 		break;
@@ -883,7 +963,7 @@ uint32_t getDatFromMaster(uint8_t address ,uint8_t **bufout)
 				else
 				{
 					len=0;
-					
+					msg_out("#get_tail=%d\n",get_OS_sys_count());
 					goto ok_exit;
 				}
 	

@@ -146,6 +146,7 @@ void task_deal_ins_res(void)
 	uint8_t buf[48] = 0;
 	uint8_t *pr = buf;
 	uint8_t j=0;
+	uint8_t rcvend=0;
 
 	msg_out("a run\n");
 	TaskDelay(1500);
@@ -172,18 +173,29 @@ void task_deal_ins_res(void)
 				msg_out("err: mem overflow\n");
 			}
 			free_mem_to_pool(&pr_rcv);
-			
+			if((buf[len-2]==0x0d)&&(buf[len-1]==0x0a))
+			{
+				msg_out("#uart1 rcv tail\n");
+				rcvend=1;
+			}
 		}
 		else
 		{
+			//msg_out("uart1rcv timeout\n");
+			rcvend=1;
+		}
+		if(rcvend==1)
+		{
+			rcvend=0;
 			if (len != 0)
 			{
-				msg_out("\n rc= %x dat_rcv = ", rc);
+				// msg_out("\n rc= %x dat_rcv = ", rc);
 				for (i = 0; i < len; i++)
 				{
-					msg_out("%x ", buf[i]);
+					// msg_out("%x ", buf[i]);
 				}
 				msg_out("\n");
+				// msg_out("#getDealDat=%d\n",get_OS_sys_count());
 				deal_master_cmd(buf);
 			}
 			len = 0;
@@ -307,11 +319,11 @@ void task_uart1_rcv(void)
 		if (st == FUN_OK)
 		{
 			len = pr_dat[3];
-			msg_out("rcv ok,buf[3]=%d len=%d\n", pr_dat[3], len);
+			//msg_out("rcv ok,buf[3]=%d len=%d\n", pr_dat[3], len);
 
 			for (i = 0; i < len + 8; i++)
 			{
-				msg_out("%x ", pr_dat[i]);
+				//msg_out("%x ", pr_dat[i]);
 			}
 			len = len + 8;
 
@@ -328,8 +340,9 @@ void task_uart1_rcv(void)
 			}
 			os_free(prmem);
 			#endif
-
+			msg_out("#sendDat=%d\n",get_OS_sys_count());
 			uput_dat_to_queue(&queue_uart1_rcv, &pool_uart1_rcv, pr_dat, len, 2000);
+
 
 		}
 		else
@@ -407,7 +420,7 @@ void task_run(void)
 	GetStartDelayTime(&time_start);
 	for(;;)
 	{
-		msg_out("task running %d \n",rc);
+		//msg_out("task running %d \n",rc);
 		rc++;
 
 		TaskDelayPeriodic(1000,&time_start);
