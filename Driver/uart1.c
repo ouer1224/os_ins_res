@@ -1,7 +1,8 @@
 #include"include.h"
 #include "../os/task.h"
+#include "../os/sem.h"
 
-
+extern SemCB sem_uart3rcv;
 
 //uint8_t SendBuff[SENDBUFF_SIZE];
 u8 DMA_DR_BASE[UART1_FIFO_SIZE];
@@ -171,6 +172,7 @@ void USART1_IRQHandler(void)
 {
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
 	{
+		isem_release(&sem_uart3rcv);
 #if 1	
 		uart1_recv_fifo[uart1_recv_fifo_in++] = USART_ReceiveData(USART1) ;
 		if(uart1_recv_fifo_in >= UART1_FIFO_SIZE)

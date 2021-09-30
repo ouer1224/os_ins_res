@@ -341,6 +341,7 @@ void task_uart1_rcv(void)
 	uint32_t i = 0;
 	uint32_t len = 0;
 	uint8_t *prmem = NULL;
+	uint8_t timeout=0;
 
 	TaskDelay(200);
 	msg_out("uart1 rcv run\n");
@@ -351,6 +352,7 @@ void task_uart1_rcv(void)
 		st = getDatFromMaster(Adress_Ins_Res, &pr_dat);
 		if (st == FUN_OK)
 		{
+			timeout=0;
 			len = pr_dat[3];
 			//msg_out("rcv ok,buf[3]=%d len=%d\n", pr_dat[3], len);
 
@@ -381,7 +383,16 @@ void task_uart1_rcv(void)
 		else
 		{
 			TaskDelay(1);
+			timeout++;
 		}
+
+		if(timeout>5)
+		{
+			sem_acquire(&sem_uart3rcv,0xffffffff);
+			timeout=0;
+		}
+		
+
 #else
 		st = get_dat_from_queue(&queue_timer2, &pr_dat, 1000, 0);
 		if (st == os_true)
@@ -527,7 +538,7 @@ void task_adc(void)
 					
 				}	
 				#endif
-				// msg_out("which7699=%d   rx=%x   v=%d\n", which7699, SPI_RX_BUF[0], adc_dat[0]&(~(0x01<<31)));
+				msg_out("which7699=%d   rx=%x   v=%d\n", which7699, SPI_RX_BUF[0], adc_dat[0]&(~(0x01<<31)));
 
 				which7699=(which7699+1)%2;
 			}
